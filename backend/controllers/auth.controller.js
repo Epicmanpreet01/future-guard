@@ -57,12 +57,10 @@ export const login = async (req, res) => {
 export const registerSuperAdmin = async (req, res) => {
   const { name, email, password } = req.body || {};
   if (!name || !email || !password) {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        error: "Name, email, and password are required",
-      });
+    return res.status(400).json({
+      success: false,
+      error: "Name, email, and password are required",
+    });
   }
   if (!validateEmail(email) || !validatePassword(password)) {
     return res
@@ -102,14 +100,12 @@ export const registerSuperAdmin = async (req, res) => {
     const safe = user.toObject();
     delete safe.hashedPassword;
 
-    return res
-      .status(201)
-      .json({
-        success: true,
-        message: "SuperAdmin registered",
-        data: safe,
-        token,
-      });
+    return res.status(201).json({
+      success: true,
+      message: "SuperAdmin registered",
+      data: safe,
+      token,
+    });
   } catch (err) {
     console.error("Error registering super admin:", err);
     return res

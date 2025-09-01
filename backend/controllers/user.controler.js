@@ -25,14 +25,8 @@ const canActOn = (actor, target) => {
 };
 
 export const createUser = async (req, res) => {
-  const {
-    name,
-    email,
-    password,
-    role,
-    department,
-    instituteId: bodyInstituteId,
-  } = req.body || {};
+  const { name, email, password, role, department, instituteId } =
+    req.body || {};
 
   if (!name || !email || !password || !role) {
     return res.status(400).json({
@@ -212,7 +206,6 @@ export const listUsers = async (req, res) => {
   try {
     const query = {};
     if (req.user.role === "admin") {
-      // admins see only their institute mentors
       query.instituteId = req.user.instituteId || null;
       query.role = "mentor";
     }
