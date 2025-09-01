@@ -18,8 +18,8 @@ app.get("/", (_req, res) =>
   res.status(200).json({ message: "API is running..." })
 );
 
-app.use("/auth", authRoutes);
-app.use("/user", userRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/user", userRoutes);
 
 app.use((err, _req, res, _next) => {
   console.error("Unhandled error:", err);

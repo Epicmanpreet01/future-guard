@@ -8,7 +8,7 @@ import {
 } from "../utils/authUtils.js";
 
 export const login = async (req, res) => {
-  const { email, password } = req.body || {};
+  const { email, password } = req.body;
   if (!email || !password) {
     return res
       .status(400)
@@ -112,4 +112,30 @@ export const registerSuperAdmin = async (req, res) => {
       .status(500)
       .json({ success: false, error: "Internal server error" });
   }
+};
+
+export const logout = async (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 24 * 60 * 60 * 1000,
+  });
+};
+
+export const getUser = async (req, res) => {
+  const { user } = req;
+
+  if (!user)
+    return res
+      .status(401)
+      .json({ success: false, error: "Unauthorized access" });
+
+  const currUser = await User.findById(user.userId).select("-password");
+
+  return res.status(200).json({
+    success: true,
+    message: "User details fetched successfully",
+    data: currUser,
+  });
 };

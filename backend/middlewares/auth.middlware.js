@@ -16,12 +16,10 @@ export const authMiddleware = async (req, res, next) => {
       "_id role instituteId activeStatus"
     );
     if (!user || user.activeStatus === false) {
-      return res
-        .status(401)
-        .json({
-          success: false,
-          error: "Unauthorized: user not found or inactive",
-        });
+      return res.status(401).json({
+        success: false,
+        error: "Unauthorized: user not found or inactive",
+      });
     }
 
     req.user = {
@@ -45,12 +43,10 @@ export const authMiddleware = async (req, res, next) => {
 export const authorizeRoles = (...allowedRoles) => {
   return (req, res, next) => {
     if (!req.user) {
-      return res
-        .status(500)
-        .json({
-          success: false,
-          error: "authMiddleware must run before authorizeRoles",
-        });
+      return res.status(500).json({
+        success: false,
+        error: "authMiddleware must run before authorizeRoles",
+      });
     }
     if (!allowedRoles.includes(req.user.role)) {
       return res

@@ -72,9 +72,7 @@ export const createUser = async (req, res) => {
       role: normalizedRole,
       department: department || undefined,
       instituteId:
-        req.user.role === "admin"
-          ? req.user.instituteId
-          : bodyInstituteId || null,
+        req.user.role === "admin" ? req.user.instituteId : instituteId || null,
     });
 
     const safe = newUser.toObject();
