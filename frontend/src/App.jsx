@@ -3,26 +3,22 @@ import LoginPage from "./pages/LoginPage.jsx"
 import AdminDashboard from "./components/AdminDashboard.jsx";
 import MentorDashboard from "./components/MentorDashboard.jsx";
 import LoadingSpinner from "./components/utils/LoadingSpinner.jsx";
-import { Bounce, toast, ToastContainer } from "react-toastify";
+import { Bounce, ToastContainer } from "react-toastify";
 import useAuthUser from "./hooks/queries/useAuthUser.js";
 
 function App() {
 
-  const { authUser, isPending, isError } = useAuthUser();
+  const { data:authUser, isPending} = useAuthUser();
 
   if (isPending) {
     return <LoadingSpinner />
-  }
-
-  if (isError) {
-    toast.error("User could not be fetched");
   }
 
   return (
     <>
       <Routes>
         <Route path="/login" element={authUser ? <Navigate to={'/'}/> : <LoginPage />}/>
-        <Route path="/" element={authUser ? (authUser?.role ? <AdminDashboard /> : < MentorDashboard/>) : < Navigate to={'/login'}/>}/>
+        <Route path="/" element={authUser ? (authUser?.role== 'admin' ? <AdminDashboard /> : authUser?.role == 'superAdmin' ? "SuperAdmin" : < MentorDashboard/>) : < Navigate to={'/login'}/>}/>
       </Routes>
       <ToastContainer
             position="top-center"
