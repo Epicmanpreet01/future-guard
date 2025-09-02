@@ -10,7 +10,7 @@ const UserSchema = new Schema(
       lowercase: true,
       trim: true,
     },
-    hashedPassword: { type: String, required: true, select: true },
+    hashedPassword: { type: String, required: true },
     role: {
       type: String,
       enum: ["superAdmin", "admin", "mentor"],

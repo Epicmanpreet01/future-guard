@@ -143,7 +143,7 @@ export const getUser = async (req, res) => {
   });
 };
 
-export const registerAdmin = async (req, res) => {
+export const registerInstituteWithAdmin = async (req, res) => {
   const { name, email, password, instituteName } = req.body;
 
   if (!name || !email || !password || !instituteName)

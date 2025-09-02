@@ -4,7 +4,7 @@ import {
   logout,
   registerSuperAdmin,
   getUser,
-  registerAdmin,
+  registerInstituteWithAdmin,
   registerMentor,
 } from "../controllers/auth.controller.js";
 import {
@@ -22,7 +22,7 @@ router.post(
   "/admin-register",
   authMiddleware,
   authorizeRoles(["superAdmin"]),
-  registerAdmin
+  registerInstituteWithAdmin
 );
 
 router.post(
