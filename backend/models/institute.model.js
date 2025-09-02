@@ -4,7 +4,7 @@ const Institute = model(
   "Institute",
   new Schema(
     {
-      InstituteName: {
+      instituteName: {
         type: String,
         required: true,
         unique: true,

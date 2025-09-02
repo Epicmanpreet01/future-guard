@@ -21,7 +21,8 @@ router.post("/register", registerSuperAdmin);
 router.post(
   "/admin-register",
   authMiddleware,
-  authorizeRoles(["superAdmin"], registerAdmin)
+  authorizeRoles(["superAdmin"]),
+  registerAdmin
 );
 
 router.post(

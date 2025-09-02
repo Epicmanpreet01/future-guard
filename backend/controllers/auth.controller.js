@@ -190,7 +190,7 @@ export const registerAdmin = async (req, res) => {
     await institute.save();
 
     return res.status(200).json({
-      success: false,
+      success: true,
       message: "Admin created successfully",
       data: {
         instituteId: institute._id,
