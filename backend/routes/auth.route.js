@@ -4,14 +4,35 @@ import {
   logout,
   registerSuperAdmin,
   getUser,
+  registerAdmin,
+  registerMentor,
 } from "../controllers/auth.controller.js";
-import { authMiddleware } from "../middlewares/auth.middlware.js";
+import {
+  authMiddleware,
+  authorizeRoles,
+} from "../middlewares/auth.middlware.js";
 
 const router = Router();
 
 router.post("/login", login);
-router.post("/superAdmin/register", registerSuperAdmin);
+
+router.post("/register", registerSuperAdmin);
+
+router.post(
+  "/admin-register",
+  authMiddleware,
+  authorizeRoles(["superAdmin"], registerAdmin)
+);
+
+router.post(
+  "/mentor-register",
+  authMiddleware,
+  authorizeRoles(["admin"]),
+  registerMentor
+);
+
 router.post("/logout", authMiddleware, logout);
+
 router.get("/me", authMiddleware, getUser);
 
 export default router;

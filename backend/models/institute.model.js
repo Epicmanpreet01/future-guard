@@ -23,3 +23,5 @@ const Institute = model(
     }
   )
 );
+
+export default Institute;

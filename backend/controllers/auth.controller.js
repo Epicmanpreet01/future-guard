@@ -1,3 +1,4 @@
+import Institute from "../models/institute.model.js";
 import User from "../models/user.model.js";
 import {
   validateEmail,
@@ -121,6 +122,8 @@ export const logout = async (req, res) => {
     sameSite: "lax",
     maxAge: 24 * 60 * 60 * 1000,
   });
+
+  return res.status(200).json({ success: true, message: "Logged out" });
 };
 
 export const getUser = async (req, res) => {
@@ -138,4 +141,112 @@ export const getUser = async (req, res) => {
     message: "User details fetched successfully",
     data: currUser,
   });
+};
+
+export const registerAdmin = async (req, res) => {
+  const { name, email, password, instituteName } = req.body;
+
+  if (!name || !email || !password || !instituteName)
+    return res
+      .status(401)
+      .json({ success: false, error: "Input fields can not be null" });
+
+  try {
+    const instituteExists = await Institute.findOne({ instituteName });
+    if (instituteExists)
+      return res
+        .status(400)
+        .json({ success: false, error: "Instittute already exists" });
+
+    if (!validateEmail(email) || !validatePassword(password))
+      return res
+        .status(400)
+        .json({ success: false, error: "Invalid email or password" });
+
+    const emailExists = await User.findOne({ email });
+    if (emailExists)
+      return res
+        .status(400)
+        .json({ success: false, error: "email already exists" });
+
+    const hashedPassword = await hashPassword(password);
+
+    const admin = await User.create({
+      name,
+      email,
+      hashedPassword,
+      role: "admin",
+    });
+
+    const institute = await Institute.create({
+      instituteName,
+      adminId: admin._id,
+      config: {},
+    });
+
+    admin.instituteId = institute._id;
+
+    await admin.save();
+    await institute.save();
+
+    return res.status(200).json({
+      success: false,
+      message: "Admin created successfully",
+      data: {
+        instituteId: institute._id,
+        adminId: admin._id,
+      },
+    });
+  } catch (error) {
+    console.error(`Error occured while registering admin: ${error}`);
+    return res
+      .status(500)
+      .json({ success: false, error: "Internal server error" });
+  }
+};
+
+export const registerMentor = async (req, res) => {
+  const { user: currUser } = req;
+  const { name, email, password } = req.body;
+
+  if (!name || !email || !password)
+    return res.status(400).json({ success: false, error: "Invalid input" });
+
+  if (!validateEmail(email) || !validatePassword(password))
+    return res
+      .status(400)
+      .json({ success: false, error: "Invalid email or password" });
+
+  try {
+    const emailExists = await User.findOne({ email });
+    if (emailExists)
+      return res
+        .status(400)
+        .json({ success: false, error: "email already exists" });
+
+    const hashedPassword = await hashPassword(password);
+
+    const user = await User.create({
+      name,
+      email,
+      hashedPassword,
+      role: "mentor",
+      instituteId: currUser.instituteId,
+    });
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "mentor created successfully",
+      data: {
+        mentorId: user._id,
+      },
+    });
+  } catch (error) {
+    console.error(`Error occured while registering mentor: ${error}`);
+    return res
+      .status(500)
+      .json({ success: false, error: "Internal server error" });
+  }
 };
