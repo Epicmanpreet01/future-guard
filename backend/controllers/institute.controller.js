@@ -2,6 +2,7 @@ import Institute from "../models/institute.model.js";
 import User from "../models/user.model.js";
 import stringSimilarity from "string-similarity";
 import Metadata from "../models/metadata.model.js";
+import mongoose from "mongoose";
 
 export const getInstitutes = async (req, res) => {
   try {
@@ -25,7 +26,7 @@ export const getInstitutes = async (req, res) => {
 export const getInstituteById = async (req, res) => {
   const { instituteId } = req.params;
 
-  if (!instituteId)
+  if (!instituteId || !mongoose.Types.ObjectId.isValid(instituteId))
     return res.status(400).json({ success: false, error: "Invalid id" });
 
   try {
@@ -49,7 +50,7 @@ export const getInstituteById = async (req, res) => {
 export const removeInstitute = async (req, res) => {
   const { instituteId } = req.params;
 
-  if (!instituteId)
+  if (!instituteId || !mongoose.Types.ObjectId.isValid(instituteId))
     return res.status(401).json({ success: false, error: "Invalid id" });
 
   try {
