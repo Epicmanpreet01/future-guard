@@ -55,9 +55,18 @@ const SuperAdminSchema = new Schema({
   },
 });
 
+const AdminSchema = new Schema({
+  aggregations: {
+    mentor: {
+      active: { type: Number, default: 0 },
+      inactive: { type: Number, default: 0 },
+    },
+  },
+});
+
 const SuperAdmin = User.discriminator("superAdmin", SuperAdminSchema);
 
-const Admin = User.discriminator("admin", new Schema({}));
+const Admin = User.discriminator("admin", AdminSchema);
 
 const Mentor = User.discriminator("mentor", new Schema({}));
 

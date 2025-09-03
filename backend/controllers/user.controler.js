@@ -208,6 +208,25 @@ export const removeMentor = async (req, res) => {
       });
     }
 
+    if (mentor.aggregations) {
+      await User.updateMany(
+        {
+          $or: [
+            { instituteId: currUser.instituteId, role: "admin" },
+            { role: "superAdmin" },
+          ],
+        },
+        {
+          $inc: {
+            "aggregations.risk.high": -mentor.aggregations.risk.high,
+            "aggregations.risk.medium": -mentor.aggregations.risk.medium,
+            "aggregations.risk.low": -mentor.aggregations.risk.low,
+            "aggregations.success": -mentor.aggregations.success,
+          },
+        }
+      );
+    }
+
     await Student.deleteMany({ mentorId });
 
     return res.status(200).json({

@@ -31,6 +31,7 @@ router.post(
 );
 
 // admin routes
+router.get("/admin/mentor/search", authMiddleware, authorizeRoles(["admin"]));
 router.get("/mentor", authMiddleware, authorizeRoles(["admin"]), getMentors);
 router.get(
   "/mentor/:mentorId",

@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Institute from "../models/institute.model.js";
 import { User, Mentor, SuperAdmin, Admin } from "../models/user.model.js";
 import {
@@ -156,6 +157,7 @@ export const getUser = async (req, res) => {
 
 export const registerInstituteWithAdmin = async (req, res) => {
   const { name, email, password, instituteName } = req.body;
+  const session = await mongoose.startSession();
 
   if (!name || !email || !password || !instituteName)
     return res
@@ -163,6 +165,7 @@ export const registerInstituteWithAdmin = async (req, res) => {
       .json({ success: false, error: "Input fields can not be null" });
 
   try {
+    session.startTransaction();
     const instituteExists = await Institute.findOne({ instituteName });
     if (instituteExists)
       return res
@@ -182,35 +185,53 @@ export const registerInstituteWithAdmin = async (req, res) => {
 
     const hashedPassword = await hashPassword(password);
 
-    const admin = await Admin.create({
-      name,
-      email,
-      hashedPassword,
-      role: "admin",
-      aggregations: {
-        risk: {
-          high: 0,
-          medium: 0,
-          low: 0,
+    const admin = await Admin.create(
+      {
+        name,
+        email,
+        hashedPassword,
+        role: "admin",
+        aggregations: {
+          risk: {
+            high: 0,
+            medium: 0,
+            low: 0,
+          },
+          success: 0,
         },
-        success: 0,
       },
-    });
+      { session }
+    );
 
-    const institute = await Institute.create({
-      instituteName,
-      adminId: admin._id,
-      config: {
-        columns: [],
-        locked: false,
-        updatedAt: new Date(),
+    const institute = await Institute.create(
+      {
+        instituteName,
+        adminId: admin._id,
+        config: {
+          columns: [],
+          locked: false,
+          updatedAt: new Date(),
+        },
       },
-    });
+      { session }
+    );
+
+    await SuperAdmin.findById(
+      req.user.userId,
+      {
+        $inc: {
+          "aggregations.institute.active": 1,
+        },
+      },
+      { session }
+    );
 
     admin.instituteId = institute._id;
 
     await admin.save();
     await institute.save();
+
+    await session.commitTransaction();
 
     return res.status(200).json({
       success: true,
@@ -221,17 +242,20 @@ export const registerInstituteWithAdmin = async (req, res) => {
       },
     });
   } catch (error) {
+    await session.abortTransaction();
     console.error(`Error occured while registering admin: ${error}`);
     return res
       .status(500)
       .json({ success: false, error: "Internal server error" });
+  } finally {
+    await session.endSession();
   }
 };
 
 export const registerMentor = async (req, res) => {
   const { user: currUser } = req;
   const { name, email, password, department } = req.body;
-
+  const session = await mongoose.startSession();
   if (!name || !email || !password || !department)
     return res.status(400).json({ success: false, error: "Invalid input" });
 
@@ -241,6 +265,7 @@ export const registerMentor = async (req, res) => {
       .json({ success: false, error: "Invalid email or password" });
 
   try {
+    session.startTransaction();
     const emailExists = await User.findOne({ email });
     if (emailExists)
       return res
@@ -249,24 +274,39 @@ export const registerMentor = async (req, res) => {
 
     const hashedPassword = await hashPassword(password);
 
-    const user = await Mentor.create({
-      name,
-      email,
-      hashedPassword,
-      role: "mentor",
-      department,
-      instituteId: currUser.instituteId,
-      aggregations: {
-        risk: {
-          high: 0,
-          medium: 0,
-          low: 0,
+    const user = await Mentor.create(
+      {
+        name,
+        email,
+        hashedPassword,
+        role: "mentor",
+        department,
+        instituteId: currUser.instituteId,
+        aggregations: {
+          risk: {
+            high: 0,
+            medium: 0,
+            low: 0,
+          },
+          success: 0,
         },
-        success: 0,
       },
-    });
+      { session }
+    );
+
+    await Admin.findByIdAndUpdate(
+      req.user.userId,
+      {
+        $inc: {
+          "aggregations.mentor": 1,
+        },
+      },
+      { session }
+    );
 
     await user.save();
+
+    await session.commitTransaction();
 
     return res.status(200).json({
       success: true,
@@ -276,9 +316,12 @@ export const registerMentor = async (req, res) => {
       },
     });
   } catch (error) {
+    await session.abortTransaction();
     console.error(`Error occured while registering mentor: ${error}`);
     return res
       .status(500)
       .json({ success: false, error: "Internal server error" });
+  } finally {
+    await session.endSession();
   }
 };

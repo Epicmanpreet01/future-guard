@@ -1,5 +1,5 @@
 import Institute from "../models/institute.model.js";
-import { User } from "../models/user.model.js";
+import { Admin, SuperAdmin, User } from "../models/user.model.js";
 import stringSimilarity from "string-similarity";
 import Metadata from "../models/metadata.model.js";
 import mongoose from "mongoose";
@@ -50,11 +50,14 @@ export const getInstituteById = async (req, res) => {
 
 export const removeInstitute = async (req, res) => {
   const { instituteId } = req.params;
+  const { userId } = req.user;
+  const session = await mongoose.startSession();
 
   if (!instituteId || !mongoose.Types.ObjectId.isValid(instituteId))
     return res.status(401).json({ success: false, error: "Invalid id" });
 
   try {
+    session.startTransaction();
     const deletedInstitute = await Institute.findById(instituteId)
       .select("-config")
       .populate("adminId", "-hashedPassword");
@@ -63,19 +66,44 @@ export const removeInstitute = async (req, res) => {
         .status(404)
         .json({ success: false, error: "Institute not found" });
 
+    const admin = await User.findById(deletedInstitute.adminId);
+    if (admin && admin.aggregations) {
+      await User.updateOne(
+        { role: "superAdmin" },
+        {
+          $inc: {
+            "aggregations.risk.high": -(admin.aggregations?.risk?.high || 0),
+            "aggregations.risk.medium": -(
+              admin.aggregations?.risk?.medium || 0
+            ),
+            "aggregations.risk.low": -(admin.aggregations?.risk?.low || 0),
+            "aggregations.success": -(admin.aggregations?.success || 0),
+            "aggregations.institute.active": admin.activeStatus ? -1 : 0,
+            "aggregations.institute.inactive": admin.activeStatus ? 0 : -1,
+          },
+        },
+        { session }
+      );
+    }
+
     await deletedInstitute.deleteOne();
 
     await User.deleteMany({ instituteId });
     await Student.deleteMany({ instituteId });
 
+    await session.commitTransaction();
+
     return res
       .status(200)
       .json({ success: true, message: "Deleted", data: deletedInstitute });
   } catch (error) {
+    await session.abortTransaction();
     console.error(`Error occured while removing institute: ${error}`);
     return res
       .status(500)
       .json({ success: false, error: "Internal server error" });
+  } finally {
+    await session.endSession();
   }
 };
 
