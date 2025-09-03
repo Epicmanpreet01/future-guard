@@ -73,3 +73,33 @@ export const removeInstitute = async (req, res) => {
       .json({ success: false, error: "Internal server error" });
   }
 };
+
+export const getCurrInstitute = async (req, res) => {
+  const { user: currUser } = req;
+
+  try {
+    const institute = await Institute.findById(currUser.instituteId).populate(
+      "adminId",
+      "-hashedPassword"
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "institute fetched successfully",
+      data: institute,
+    });
+  } catch (error) {
+    console.error(`Error occured while getting current institute: ${error}`);
+    return res
+      .status(500)
+      .json({ success: false, error: "Internal server error" });
+  }
+};
+
+// export const postConfig = async (req, res) => {
+//   const { user: currUser } = req;
+//   const { studentId, studentName, year, attendance, cgpa, } = req.body;
+
+//   if (!studentId && !studentName )
+
+// }

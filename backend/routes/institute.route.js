@@ -4,13 +4,15 @@ import {
   authorizeRoles,
 } from "../middlewares/auth.middlware.js";
 import {
+  getCurrInstitute,
   getInstituteById,
   getInstitutes,
+  postConfig,
   removeInstitute,
 } from "../controllers/institute.controller.js";
 
 const router = Router();
-
+// superAdmin routes
 // delete institute with id
 router.delete(
   "/:instituteId",
@@ -27,5 +29,9 @@ router.get(
   authorizeRoles(["superAdmin"]),
   getInstituteById
 );
+
+// admin routes
+router.get("/my", authMiddleware, authorizeRoles(["admin"]), getCurrInstitute);
+// router.post("/config", authMiddleware, authorizeRoles(["admin"]), postConfig);
 
 export default router;
