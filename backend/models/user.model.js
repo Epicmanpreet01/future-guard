@@ -14,10 +14,10 @@ const AggregationSchema = new Schema({
       type: Number,
       default: 0,
     },
-    success: {
-      type: Number,
-      default: 0,
-    },
+  },
+  success: {
+    type: Number,
+    default: 0,
   },
 });
 

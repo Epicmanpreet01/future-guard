@@ -176,6 +176,14 @@ export const registerInstituteWithAdmin = async (req, res) => {
       email,
       hashedPassword,
       role: "admin",
+      aggregations: {
+        risk: {
+          high: 0,
+          medium: 0,
+          low: 0,
+        },
+        success: 0,
+      },
     });
 
     const institute = await Institute.create({
@@ -211,9 +219,9 @@ export const registerInstituteWithAdmin = async (req, res) => {
 
 export const registerMentor = async (req, res) => {
   const { user: currUser } = req;
-  const { name, email, password } = req.body;
+  const { name, email, password, department } = req.body;
 
-  if (!name || !email || !password)
+  if (!name || !email || !password || !department)
     return res.status(400).json({ success: false, error: "Invalid input" });
 
   if (!validateEmail(email) || !validatePassword(password))
@@ -235,7 +243,16 @@ export const registerMentor = async (req, res) => {
       email,
       hashedPassword,
       role: "mentor",
+      department,
       instituteId: currUser.instituteId,
+      aggregations: {
+        risk: {
+          high: 0,
+          medium: 0,
+          low: 0,
+        },
+        success: 0,
+      },
     });
 
     await user.save();

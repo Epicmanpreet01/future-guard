@@ -38,6 +38,11 @@ export const getAdminById = async (req, res) => {
       return res.status(404).json({ success: false, error: "Admin not found" });
     }
 
+    if (admin.role === "superAdmin")
+      return res
+        .status(403)
+        .json({ success: false, error: "Forbidden: Insufficient privilages" });
+
     return res.status(200).json({
       success: true,
       message: "Admin fetched successfully",
@@ -53,8 +58,7 @@ export const getAdminById = async (req, res) => {
 
 export const deactivateActivateAdmin = async (req, res) => {
   const { adminId } = req.params;
-  const { status } = req.body;
-
+  let { status } = req.body;
   if (
     !mongoose.Types.ObjectId.isValid(adminId) ||
     typeof status !== "boolean"
@@ -146,7 +150,6 @@ export const deactivateActivateMentor = async (req, res) => {
   const { user: currUser } = req;
   const { mentorId } = req.params;
   const { status } = req.body;
-
   if (
     !mongoose.Types.ObjectId.isValid(mentorId) ||
     typeof status !== "boolean"
