@@ -3,6 +3,7 @@ import User from "../models/user.model.js";
 import stringSimilarity from "string-similarity";
 import Metadata from "../models/metadata.model.js";
 import mongoose from "mongoose";
+import Student from "../models/student.model.js";
 
 export const getInstitutes = async (req, res) => {
   try {
@@ -65,6 +66,7 @@ export const removeInstitute = async (req, res) => {
     await deletedInstitute.deleteOne();
 
     await User.deleteMany({ instituteId });
+    await Student.deleteMany({ instituteId });
 
     return res
       .status(200)
