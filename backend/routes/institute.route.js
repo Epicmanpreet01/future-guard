@@ -4,11 +4,14 @@ import {
   authorizeRoles,
 } from "../middlewares/auth.middlware.js";
 import {
+  generateDraftConfig,
   getCurrInstitute,
   getInstituteById,
   getInstitutes,
+  lockConfig,
   postConfig,
   removeInstitute,
+  updateConfig,
 } from "../controllers/institute.controller.js";
 
 const router = Router();
@@ -32,6 +35,18 @@ router.get(
 
 // admin routes
 router.get("/my", authMiddleware, authorizeRoles(["admin"]), getCurrInstitute);
-// router.post("/config", authMiddleware, authorizeRoles(["admin"]), postConfig);
+router.post(
+  "/config/draft",
+  authMiddleware,
+  authorizeRoles(["admin"]),
+  generateDraftConfig
+);
+router.post("/config", authMiddleware, authorizeRoles(["admin"]), updateConfig);
+router.post(
+  "/config/lock",
+  authMiddleware,
+  authorizeRoles(["admin", "superAdmin"]),
+  lockConfig
+);
 
 export default router;

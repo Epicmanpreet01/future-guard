@@ -1,5 +1,6 @@
 import Institute from "../models/institute.model.js";
 import User from "../models/user.model.js";
+import stringSimilarity from "string-similarity";
 
 export const getInstitutes = async (req, res) => {
   try {
@@ -96,10 +97,104 @@ export const getCurrInstitute = async (req, res) => {
   }
 };
 
-// export const postConfig = async (req, res) => {
-//   const { user: currUser } = req;
-//   const { studentId, studentName, year, attendance, cgpa, } = req.body;
+export const generateDraftConfig = async (req, res) => {
+  try {
+    const { headers } = req.body;
 
-//   if (!studentId && !studentName )
+    if (!headers || !Array.isArray(headers)) {
+      return res.status(400).json({ message: "Headers array required" });
+    }
 
-// }
+    const metadata = await Metadata.find({});
+    const fieldKeys = metadata.map((m) => m.fieldKey);
+
+    const draft = headers.map((header) => {
+      const match = stringSimilarity.findBestMatch(header, fieldKeys);
+      const bestKey =
+        match.bestMatch.rating > 0.6 ? match.bestMatch.target : null;
+
+      const fieldMeta = bestKey
+        ? metadata.find((m) => m.fieldKey === bestKey)
+        : null;
+
+      return {
+        csvHeader: header,
+        fieldKey: fieldMeta ? fieldMeta.fieldKey : null,
+        type: fieldMeta ? fieldMeta.type : "string",
+        required: fieldMeta ? fieldMeta.required : false,
+        transformations: [],
+      };
+    });
+
+    res.status(200).json({ draft });
+  } catch (err) {
+    console.error("Error generating draft config:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const updateConfig = async (req, res) => {
+  try {
+    const { user } = req;
+    const { instituteId, columns } = req.body;
+
+    if (user.role !== "admin") {
+      return res.status(403).json({ message: "Only admins can update config" });
+    }
+
+    const institute = await Institute.findById(instituteId);
+    if (!institute) {
+      return res.status(404).json({ message: "Institute not found" });
+    }
+
+    if (institute.config.locked) {
+      return res.status(400).json({ message: "Config is locked" });
+    }
+
+    institute.config.columns = columns;
+    institute.config.updatedAt = new Date();
+
+    await institute.save();
+
+    res.status(200).json({
+      message: "Config saved successfully",
+      config: institute.config,
+    });
+  } catch (err) {
+    console.error("Error saving config:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const lockConfig = async (req, res) => {
+  try {
+    const { instituteId, lock } = req.body;
+    const { user } = req;
+
+    const institute = await Institute.findById(instituteId);
+    if (!institute)
+      return res.status(404).json({ message: "Institute not found" });
+
+    if (!institute.config || !institute.config.columns.length) {
+      return res.status(400).json({ message: "No config set yet" });
+    }
+
+    if (lock === false && user.role !== "superAdmin") {
+      return res
+        .status(403)
+        .json({ message: "Only SuperAdmin can unlock config" });
+    }
+
+    institute.config.locked = lock;
+    institute.config.updatedAt = new Date();
+    await institute.save();
+
+    res.status(200).json({
+      message: lock ? "Config locked" : "Config unlocked by superAdmin",
+      locked: institute.config.locked,
+    });
+  } catch (err) {
+    console.error("Error locking config:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
