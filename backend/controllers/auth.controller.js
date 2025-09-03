@@ -198,6 +198,10 @@ export const registerInstituteWithAdmin = async (req, res) => {
             low: 0,
           },
           success: 0,
+          mentor: {
+            active: 0,
+            inactive: 0,
+          },
         },
       },
       { session }
@@ -216,7 +220,7 @@ export const registerInstituteWithAdmin = async (req, res) => {
       { session }
     );
 
-    await SuperAdmin.findById(
+    await SuperAdmin.findByIdAndUpdate(
       req.user.userId,
       {
         $inc: {
@@ -298,7 +302,7 @@ export const registerMentor = async (req, res) => {
       req.user.userId,
       {
         $inc: {
-          "aggregations.mentor": 1,
+          "aggregations.mentor.active": 1,
         },
       },
       { session }
