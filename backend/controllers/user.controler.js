@@ -1,11 +1,11 @@
 import mongoose from "mongoose";
-import User from "../models/user.model.js";
+import { User, Mentor, Admin, SuperAdmin } from "../models/user.model.js";
 import Student from "../models/student.model.js";
 
 // super admin
 export const getAdmins = async (req, res) => {
   try {
-    const admins = await User.find({ role: "admin" })
+    const admins = await Admin.find({ role: "admin" })
       .select("-hashedPassword")
       .populate("instituteId");
 
@@ -30,7 +30,7 @@ export const getAdminById = async (req, res) => {
   }
 
   try {
-    const admin = await User.findById(adminId)
+    const admin = await Admin.findById(adminId)
       .select("-hashedPassword")
       .populate("instituteId");
 
@@ -67,7 +67,7 @@ export const deactivateActivateAdmin = async (req, res) => {
   }
 
   try {
-    const admin = await User.findById(adminId).select("-hashedPassword");
+    const admin = await Admin.findById(adminId).select("-hashedPassword");
     if (!admin) {
       return res.status(404).json({ success: false, error: "Admin not found" });
     }
@@ -93,7 +93,7 @@ export const getMentors = async (req, res) => {
   const { user: currUser } = req;
 
   try {
-    const mentors = await User.find({
+    const mentors = await Mentor.find({
       role: "mentor",
       instituteId: currUser.instituteId,
     }).select("-hashedPassword");
@@ -120,7 +120,7 @@ export const getMentorById = async (req, res) => {
   }
 
   try {
-    const mentor = await User.findById(mentorId).select("-hashedPassword");
+    const mentor = await Mentor.findById(mentorId).select("-hashedPassword");
     if (!mentor) {
       return res
         .status(404)
@@ -158,7 +158,7 @@ export const deactivateActivateMentor = async (req, res) => {
   }
 
   try {
-    const mentor = await User.findById(mentorId).select("-hashedPassword");
+    const mentor = await Mentor.findById(mentorId).select("-hashedPassword");
     if (!mentor) {
       return res
         .status(404)
@@ -196,7 +196,7 @@ export const removeMentor = async (req, res) => {
   }
 
   try {
-    const mentor = await User.findOneAndDelete({
+    const mentor = await Mentor.findOneAndDelete({
       _id: mentorId,
       instituteId: currUser.instituteId,
     });

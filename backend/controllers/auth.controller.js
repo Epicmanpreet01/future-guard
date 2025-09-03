@@ -1,5 +1,5 @@
 import Institute from "../models/institute.model.js";
-import User from "../models/user.model.js";
+import { User, Mentor, SuperAdmin, Admin } from "../models/user.model.js";
 import {
   validateEmail,
   validatePassword,
@@ -70,7 +70,7 @@ export const registerSuperAdmin = async (req, res) => {
   }
 
   try {
-    const existingSA = await User.findOne({ role: "superAdmin" });
+    const existingSA = await SuperAdmin.findOne({ role: "superAdmin" });
     if (existingSA) {
       return res
         .status(409)
@@ -85,7 +85,7 @@ export const registerSuperAdmin = async (req, res) => {
     }
 
     const hashed = await hashPassword(password);
-    const user = await User.create({
+    const user = await SuperAdmin.create({
       name,
       email,
       hashedPassword: hashed,
@@ -97,6 +97,10 @@ export const registerSuperAdmin = async (req, res) => {
           low: 0,
         },
         success: 0,
+        institute: {
+          active: 0,
+          inactive: 0,
+        },
       },
     });
 
@@ -178,7 +182,7 @@ export const registerInstituteWithAdmin = async (req, res) => {
 
     const hashedPassword = await hashPassword(password);
 
-    const admin = await User.create({
+    const admin = await Admin.create({
       name,
       email,
       hashedPassword,
@@ -245,7 +249,7 @@ export const registerMentor = async (req, res) => {
 
     const hashedPassword = await hashPassword(password);
 
-    const user = await User.create({
+    const user = await Mentor.create({
       name,
       email,
       hashedPassword,

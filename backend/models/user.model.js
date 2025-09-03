@@ -2,26 +2,14 @@ import { Schema, model } from "mongoose";
 
 const AggregationSchema = new Schema({
   risk: {
-    high: {
-      type: Number,
-      default: 0,
-    },
-    medium: {
-      type: Number,
-      default: 0,
-    },
-    low: {
-      type: Number,
-      default: 0,
-    },
+    high: { type: Number, default: 0 },
+    medium: { type: Number, default: 0 },
+    low: { type: Number, default: 0 },
   },
-  success: {
-    type: Number,
-    default: 0,
-  },
+  success: { type: Number, default: 0 },
 });
 
-const UserSchema = new Schema(
+const BaseUserSchema = new Schema(
   {
     name: { type: String, required: true, trim: true },
     email: {
@@ -46,15 +34,31 @@ const UserSchema = new Schema(
     activeStatus: { type: Boolean, default: true },
     aggregations: AggregationSchema,
   },
-  { timestamps: true }
+  { timestamps: true, discriminatorKey: "__t" }
 );
 
-UserSchema.set("toJSON", {
+BaseUserSchema.set("toJSON", {
   transform: (doc, ret) => {
     delete ret.hashedPassword;
     return ret;
   },
 });
 
-const User = model("User", UserSchema);
-export default User;
+const User = model("User", BaseUserSchema);
+
+const SuperAdminSchema = new Schema({
+  aggregations: {
+    institute: {
+      active: { type: Number, default: 0 },
+      inactive: { type: Number, default: 0 },
+    },
+  },
+});
+
+const SuperAdmin = User.discriminator("superAdmin", SuperAdminSchema);
+
+const Admin = User.discriminator("admin", new Schema({}));
+
+const Mentor = User.discriminator("mentor", new Schema({}));
+
+export { User, SuperAdmin, Admin, Mentor };
