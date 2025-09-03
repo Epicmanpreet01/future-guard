@@ -90,9 +90,17 @@ export const registerSuperAdmin = async (req, res) => {
       email,
       hashedPassword: hashed,
       role: "superAdmin",
+      aggregations: {
+        risk: {
+          high: 0,
+          medium: 0,
+          low: 0,
+        },
+        success: 0,
+      },
     });
 
-    const token = signAndSetToken(res, {
+    signAndSetToken(res, {
       userId: user._id,
       instituteId: null,
       role: "superAdmin",
@@ -105,7 +113,6 @@ export const registerSuperAdmin = async (req, res) => {
       success: true,
       message: "SuperAdmin registered",
       data: safe,
-      token,
     });
   } catch (err) {
     console.error("Error registering super admin:", err);
