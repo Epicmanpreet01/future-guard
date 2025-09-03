@@ -13,6 +13,7 @@ const Metadata = model(
     required: { type: Boolean, default: false },
     category: { type: String },
     useInML: { type: Boolean, default: true },
+    synonyms: [{ type: String }],
   })
 );
 

@@ -5,7 +5,7 @@ import Metadata from "../models/metadata.model.js";
 dotenv.config();
 
 const fields = [
-  // Identity / Display-only (not ML features)
+  // Identity / Display-only
   {
     fieldKey: "studentId",
     displayName: "Student ID",
@@ -13,6 +13,7 @@ const fields = [
     required: true,
     category: "identity",
     useInML: false,
+    synonyms: ["id", "student_no", "student number", "enrollment id"],
   },
   {
     fieldKey: "studentName",
@@ -21,6 +22,7 @@ const fields = [
     required: true,
     category: "identity",
     useInML: false,
+    synonyms: ["name", "full name"],
   },
   {
     fieldKey: "rollNumber",
@@ -29,6 +31,7 @@ const fields = [
     required: false,
     category: "identity",
     useInML: false,
+    synonyms: ["roll id", "roll_no", "roll no", "roll"],
   },
   {
     fieldKey: "dateOfBirth",
@@ -37,6 +40,7 @@ const fields = [
     required: false,
     category: "identity",
     useInML: false,
+    synonyms: ["dob", "birthdate", "birth date"],
   },
   {
     fieldKey: "gender",
@@ -45,9 +49,19 @@ const fields = [
     required: false,
     category: "identity",
     useInML: false,
+    synonyms: ["sex", "male/female", "m/f"],
   },
 
   // Predictive / Risk + ML Features
+  {
+    fieldKey: "age",
+    displayName: "Age",
+    type: "number",
+    required: true,
+    category: "identity",
+    useInML: true,
+    synonyms: ["age", "studentAge", "years", "yrs", "currentAge"],
+  },
   {
     fieldKey: "attendancePercentage",
     displayName: "Attendance %",
@@ -55,6 +69,7 @@ const fields = [
     required: true,
     category: "attendance",
     useInML: true,
+    synonyms: ["attendance", "att%", "attendance percent"],
   },
   {
     fieldKey: "lateSubmissionCount",
@@ -63,6 +78,7 @@ const fields = [
     required: false,
     category: "behavior",
     useInML: true,
+    synonyms: ["late work", "delayed submissions"],
   },
   {
     fieldKey: "cgpa",
@@ -71,6 +87,7 @@ const fields = [
     required: true,
     category: "academic",
     useInML: true,
+    synonyms: ["grade", "gpa", "marks", "percentage"],
   },
   {
     fieldKey: "previousYearPerformance",
@@ -79,6 +96,7 @@ const fields = [
     required: false,
     category: "academic",
     useInML: true,
+    synonyms: ["last year marks", "previous marks"],
   },
   {
     fieldKey: "mathScore",
@@ -87,6 +105,7 @@ const fields = [
     required: false,
     category: "academic",
     useInML: true,
+    synonyms: ["maths marks", "mathematics"],
   },
   {
     fieldKey: "englishScore",
@@ -95,6 +114,7 @@ const fields = [
     required: false,
     category: "academic",
     useInML: true,
+    synonyms: ["english marks"],
   },
   {
     fieldKey: "scienceScore",
@@ -103,6 +123,7 @@ const fields = [
     required: false,
     category: "academic",
     useInML: true,
+    synonyms: ["science marks"],
   },
   {
     fieldKey: "projectScore",
@@ -111,6 +132,7 @@ const fields = [
     required: false,
     category: "academic",
     useInML: true,
+    synonyms: ["practical marks", "lab score"],
   },
   {
     fieldKey: "totalMarks",
@@ -119,6 +141,7 @@ const fields = [
     required: false,
     category: "academic",
     useInML: true,
+    synonyms: ["marks obtained", "overall marks"],
   },
   {
     fieldKey: "feesPaid",
@@ -127,6 +150,7 @@ const fields = [
     required: true,
     category: "financial",
     useInML: true,
+    synonyms: ["fees", "payment status", "paid", "fee status"],
   },
   {
     fieldKey: "libraryDues",
@@ -135,6 +159,7 @@ const fields = [
     required: false,
     category: "financial",
     useInML: true,
+    synonyms: ["library fine", "book dues"],
   },
   {
     fieldKey: "sportsScore",
@@ -143,6 +168,7 @@ const fields = [
     required: false,
     category: "extracurricular",
     useInML: true,
+    synonyms: ["sports marks", "extracurricular"],
   },
   {
     fieldKey: "behaviorScore",
@@ -151,6 +177,7 @@ const fields = [
     required: false,
     category: "behavior",
     useInML: true,
+    synonyms: ["discipline", "conduct", "character"],
   },
   {
     fieldKey: "scholarshipEligibility",
@@ -159,6 +186,7 @@ const fields = [
     required: false,
     category: "academic",
     useInML: true,
+    synonyms: ["scholarship", "eligible for scholarship"],
   },
   {
     fieldKey: "specialNeedsFlag",
@@ -167,6 +195,7 @@ const fields = [
     required: false,
     category: "identity",
     useInML: true,
+    synonyms: ["disability", "special assistance"],
   },
 ];
 
@@ -174,17 +203,17 @@ async function seedMetadata() {
   try {
     await mongoose.connect(process.env.MONGO_URI);
 
-    console.log("Connected to MongoDB");
+    console.log("✅ Connected to MongoDB");
 
     await Metadata.deleteMany({});
-    console.log("Cleared existing Metadata");
+    console.log("🗑️ Cleared existing Metadata");
 
     await Metadata.insertMany(fields);
-    console.log("Inserted metadata fields successfully");
+    console.log("✨ Inserted metadata fields successfully");
 
     process.exit(0);
   } catch (err) {
-    console.error("Error seeding metadata:", err);
+    console.error("❌ Error seeding metadata:", err);
     process.exit(1);
   }
 }

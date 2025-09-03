@@ -31,7 +31,7 @@ router.get(
 
 // config routes
 router.get(
-  "/my",
+  "/current/my",
   authMiddleware,
   authorizeRoles(["admin", "mentor"]),
   getCurrInstitute
@@ -43,13 +43,11 @@ router.post(
   generateDraftConfig
 );
 router.put("/config", authMiddleware, authorizeRoles(["admin"]), updateConfig);
-router.post(
-  "/config/lock",
+router.patch(
+  "/config/lock/:instituteId",
   authMiddleware,
   authorizeRoles(["admin", "superAdmin"]),
   lockConfig
 );
-
-router;
 
 export default router;

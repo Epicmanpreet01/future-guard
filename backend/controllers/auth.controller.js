@@ -181,7 +181,11 @@ export const registerInstituteWithAdmin = async (req, res) => {
     const institute = await Institute.create({
       instituteName,
       adminId: admin._id,
-      config: {},
+      config: {
+        columns: [],
+        locked: false,
+        updatedAt: new Date(),
+      },
     });
 
     admin.instituteId = institute._id;

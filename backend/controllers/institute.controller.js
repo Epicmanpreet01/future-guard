@@ -98,25 +98,47 @@ export const getCurrInstitute = async (req, res) => {
   }
 };
 
+const normalize = (str) => str.toLowerCase().replace(/[^a-z0-9]/g, "");
+
 export const generateDraftConfig = async (req, res) => {
   try {
     const { headers } = req.body;
+    const institute = await Institute.findById(req.user.instituteId);
+    if (institute.config.locked)
+      return res.status(400).json({
+        success: false,
+        error:
+          "configuration is already locked, please contact the owner if you think it is wrong",
+      });
 
     if (!headers || !Array.isArray(headers)) {
-      return res.status(400).json({ message: "Headers array required" });
+      return res
+        .status(400)
+        .json({ success: false, error: "Headers array required" });
     }
 
     const metadata = await Metadata.find({});
-    const fieldKeys = metadata.map((m) => m.fieldKey);
+    const candidates = metadata.flatMap((m) => [
+      { fieldKey: m.fieldKey, meta: m },
+      ...(m.synonyms || []).map((syn) => ({
+        fieldKey: m.fieldKey,
+        meta: m,
+        synonym: syn,
+      })),
+    ]);
 
     const draft = headers.map((header) => {
-      const match = stringSimilarity.findBestMatch(header, fieldKeys);
-      const bestKey =
-        match.bestMatch.rating > 0.6 ? match.bestMatch.target : null;
+      const normHeader = normalize(header);
 
-      const fieldMeta = bestKey
-        ? metadata.find((m) => m.fieldKey === bestKey)
-        : null;
+      const best = candidates
+        .map((c) => {
+          const target = normalize(c.synonym || c.fieldKey);
+          const rating = stringSimilarity.compareTwoStrings(normHeader, target);
+          return { ...c, rating };
+        })
+        .sort((a, b) => b.rating - a.rating)[0];
+
+      const fieldMeta = best && best.rating > 0.5 ? best.meta : null;
 
       return {
         csvHeader: header,
@@ -127,29 +149,39 @@ export const generateDraftConfig = async (req, res) => {
       };
     });
 
-    res.status(200).json({ draft });
+    res.status(200).json({
+      success: true,
+      message: "draft created successfully",
+      data: draft,
+    });
   } catch (err) {
     console.error("Error generating draft config:", err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ success: false, error: "Server error" });
   }
 };
 
 export const updateConfig = async (req, res) => {
   try {
     const { user } = req;
-    const { instituteId, columns } = req.body;
+    let { columns } = req.body;
 
     if (user.role !== "admin") {
-      return res.status(403).json({ message: "Only admins can update config" });
+      return res
+        .status(403)
+        .json({ success: false, error: "Only admins can update config" });
     }
 
-    const institute = await Institute.findById(instituteId);
+    const institute = await Institute.findById(user.instituteId);
     if (!institute) {
-      return res.status(404).json({ message: "Institute not found" });
+      return res
+        .status(404)
+        .json({ success: false, error: "Institute not found" });
     }
 
-    if (institute.config.locked) {
-      return res.status(400).json({ message: "Config is locked" });
+    if (institute.config?.locked) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Config is locked" });
     }
 
     institute.config.columns = columns;
@@ -158,32 +190,38 @@ export const updateConfig = async (req, res) => {
     await institute.save();
 
     res.status(200).json({
+      success: true,
       message: "Config saved successfully",
       config: institute.config,
     });
   } catch (err) {
     console.error("Error saving config:", err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ success: false, error: "Server error" });
   }
 };
 
 export const lockConfig = async (req, res) => {
   try {
-    const { instituteId, lock } = req.body;
+    const { instituteId } = req.params;
+    const { lock } = req.body;
     const { user } = req;
 
     const institute = await Institute.findById(instituteId);
     if (!institute)
-      return res.status(404).json({ message: "Institute not found" });
+      return res
+        .status(404)
+        .json({ success: false, error: "Institute not found" });
 
     if (!institute.config || !institute.config.columns.length) {
-      return res.status(400).json({ message: "No config set yet" });
+      return res
+        .status(400)
+        .json({ success: false, error: "No config set yet" });
     }
 
     if (lock === false && user.role !== "superAdmin") {
       return res
         .status(403)
-        .json({ message: "Only SuperAdmin can unlock config" });
+        .json({ success: false, error: "Only SuperAdmin can unlock config" });
     }
 
     institute.config.locked = lock;
@@ -191,11 +229,12 @@ export const lockConfig = async (req, res) => {
     await institute.save();
 
     res.status(200).json({
+      success: true,
       message: lock ? "Config locked" : "Config unlocked by superAdmin",
       locked: institute.config.locked,
     });
   } catch (err) {
     console.error("Error locking config:", err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ success: false, error: "Server error" });
   }
 };
