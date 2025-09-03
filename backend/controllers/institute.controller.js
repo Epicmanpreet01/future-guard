@@ -1,6 +1,7 @@
 import Institute from "../models/institute.model.js";
 import User from "../models/user.model.js";
 import stringSimilarity from "string-similarity";
+import Metadata from "../models/metadata.model.js";
 
 export const getInstitutes = async (req, res) => {
   try {
