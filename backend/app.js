@@ -7,6 +7,7 @@ import connectDB from "./config/db.js";
 import authRoutes from "./routes/auth.route.js";
 import userRoutes from "./routes/user.route.js";
 import instituteRoutes from "./routes/institute.route.js";
+import aggregationRoutes from "./routes/aggregation.route.js";
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.get("/", (_req, res) =>
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/institute", instituteRoutes);
+app.use("/api/aggregation", aggregationRoutes);
 
 app.use((err, _req, res, _next) => {
   console.error("Unhandled error:", err);

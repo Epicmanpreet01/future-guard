@@ -13,7 +13,6 @@ export const comparePasswords = (password, hash) =>
 export const hashPassword = (password) => bcrypt.hash(password, 10);
 
 export const signAndSetToken = (res, payload) => {
-  console.log(process.env.JWT_SECRET_KEY);
   const token = jwt.sign(payload, process.env.JWT_SECRET_KEY, {
     expiresIn: "1d",
   });
@@ -23,5 +22,4 @@ export const signAndSetToken = (res, payload) => {
     sameSite: "lax",
     maxAge: 24 * 60 * 60 * 1000,
   });
-  return token;
 };
