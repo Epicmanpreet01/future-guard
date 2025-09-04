@@ -185,38 +185,42 @@ export const registerInstituteWithAdmin = async (req, res) => {
 
     const hashedPassword = await hashPassword(password);
 
-    const admin = await Admin.create(
-      {
-        name,
-        email,
-        hashedPassword,
-        role: "admin",
-        aggregations: {
-          risk: {
-            high: 0,
-            medium: 0,
-            low: 0,
-          },
-          success: 0,
-          mentor: {
-            active: 0,
-            inactive: 0,
+    const [admin] = await Admin.create(
+      [
+        {
+          name,
+          email,
+          hashedPassword,
+          role: "admin",
+          aggregations: {
+            risk: {
+              high: 0,
+              medium: 0,
+              low: 0,
+            },
+            success: 0,
+            mentor: {
+              active: 0,
+              inactive: 0,
+            },
           },
         },
-      },
+      ],
       { session }
     );
 
-    const institute = await Institute.create(
-      {
-        instituteName,
-        adminId: admin._id,
-        config: {
-          columns: [],
-          locked: false,
-          updatedAt: new Date(),
+    const [institute] = await Institute.create(
+      [
+        {
+          instituteName,
+          adminId: admin._id,
+          config: {
+            columns: [],
+            locked: false,
+            updatedAt: new Date(),
+          },
         },
-      },
+      ],
       { session }
     );
 
@@ -232,8 +236,8 @@ export const registerInstituteWithAdmin = async (req, res) => {
 
     admin.instituteId = institute._id;
 
-    await admin.save();
-    await institute.save();
+    await admin.save({ session });
+    await institute.save({ session });
 
     await session.commitTransaction();
 
@@ -278,23 +282,25 @@ export const registerMentor = async (req, res) => {
 
     const hashedPassword = await hashPassword(password);
 
-    const user = await Mentor.create(
-      {
-        name,
-        email,
-        hashedPassword,
-        role: "mentor",
-        department,
-        instituteId: currUser.instituteId,
-        aggregations: {
-          risk: {
-            high: 0,
-            medium: 0,
-            low: 0,
+    const [user] = await Mentor.create(
+      [
+        {
+          name,
+          email,
+          hashedPassword,
+          role: "mentor",
+          department,
+          instituteId: currUser.instituteId,
+          aggregations: {
+            risk: {
+              high: 0,
+              medium: 0,
+              low: 0,
+            },
+            success: 0,
           },
-          success: 0,
         },
-      },
+      ],
       { session }
     );
 
@@ -308,7 +314,7 @@ export const registerMentor = async (req, res) => {
       { session }
     );
 
-    await user.save();
+    await user.save({ session });
 
     await session.commitTransaction();
 

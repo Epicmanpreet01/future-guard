@@ -53,23 +53,29 @@ export const removeInstitute = async (req, res) => {
   const { userId } = req.user;
   const session = await mongoose.startSession();
 
-  if (!instituteId || !mongoose.Types.ObjectId.isValid(instituteId))
+  if (!instituteId || !mongoose.Types.ObjectId.isValid(instituteId)) {
     return res.status(401).json({ success: false, error: "Invalid id" });
+  }
 
   try {
     session.startTransaction();
+
     const deletedInstitute = await Institute.findById(instituteId)
       .select("-config")
       .populate("adminId", "-hashedPassword");
-    if (!deletedInstitute)
+
+    if (!deletedInstitute) {
+      await session.abortTransaction();
       return res
         .status(404)
         .json({ success: false, error: "Institute not found" });
+    }
 
-    const admin = await User.findById(deletedInstitute.adminId);
+    const admin = deletedInstitute.adminId;
+
     if (admin && admin.aggregations) {
-      await User.updateOne(
-        { role: "superAdmin" },
+      await SuperAdmin.updateOne(
+        { _id: userId },
         {
           $inc: {
             "aggregations.risk.high": -(admin.aggregations?.risk?.high || 0),
@@ -78,18 +84,19 @@ export const removeInstitute = async (req, res) => {
             ),
             "aggregations.risk.low": -(admin.aggregations?.risk?.low || 0),
             "aggregations.success": -(admin.aggregations?.success || 0),
-            "aggregations.institute.active": admin.activeStatus ? -1 : 0,
-            "aggregations.institute.inactive": admin.activeStatus ? 0 : -1,
+            "aggregations.institute.active":
+              admin.activeStatus === true ? -1 : 0,
+            "aggregations.institute.inactive":
+              admin.activeStatus === false ? -1 : 0,
           },
         },
         { session }
       );
     }
 
-    await deletedInstitute.deleteOne();
-
-    await User.deleteMany({ instituteId });
-    await Student.deleteMany({ instituteId });
+    await User.deleteMany({ instituteId }, { session });
+    await Student.deleteMany({ instituteId }, { session });
+    await deletedInstitute.deleteOne({ session });
 
     await session.commitTransaction();
 
