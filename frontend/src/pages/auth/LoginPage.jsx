@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Eye, EyeOff, Mail, Lock, User, Brain, GraduationCap, Shield } from "lucide-react";
-import { useLoginMutation } from "../hooks/mutations/authMutation.js";
-import LoadingSpinner from "../components/utils/LoadingSpinner.jsx";
+import { useLoginMutation } from "../../hooks/mutations/authMutation.js";
+import LoadingSpinner from "../../components/utils/LoadingSpinner.jsx";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);

@@ -179,26 +179,42 @@ export const getMentorById = async (req, res) => {
   }
 };
 
-export const deactivateActivateMentor = async (req, res) => {
+export const updateMentor = async (req, res) => {
   const { user: currUser } = req;
   const { mentorId } = req.params;
-  const { status } = req.body;
+  const { status, department } = req.body;
   const session = await mongoose.startSession();
-  if (
-    !mongoose.Types.ObjectId.isValid(mentorId) ||
-    typeof status !== "boolean"
-  ) {
-    return res.status(400).json({ success: false, error: "Invalid input" });
+
+  if (!mongoose.Types.ObjectId.isValid(mentorId)) {
+    return res.status(400).json({ success: false, error: "Invalid mentor ID" });
+  }
+
+  if (status !== undefined && typeof status !== "boolean") {
+    return res
+      .status(400)
+      .json({ success: false, error: "Invalid status value" });
+  }
+
+  if (department !== undefined && typeof department !== "string") {
+    return res
+      .status(400)
+      .json({ success: false, error: "Invalid department value" });
+  }
+
+  if (status === undefined && department === undefined) {
+    return res.status(400).json({ success: false, error: "Nothing to update" });
   }
 
   try {
     session.startTransaction();
+
     const mentor = await Mentor.findOne({
       _id: mentorId,
       instituteId: currUser.instituteId,
     })
       .select("-hashedPassword")
       .session(session);
+
     if (!mentor) {
       return res.status(404).json({
         success: false,
@@ -206,42 +222,45 @@ export const deactivateActivateMentor = async (req, res) => {
       });
     }
 
-    if (mentor.activeStatus === status)
-      return res.status(200).json({
-        success: true,
-        message: "active status already same as input",
-        data: { mentorId, status },
-      });
+    let aggregationUpdate = null;
+    if (status !== undefined && mentor.activeStatus !== status) {
+      mentor.activeStatus = status;
+      aggregationUpdate = status
+        ? {
+            "aggregations.mentor.active": 1,
+            "aggregations.mentor.inactive": -1,
+          }
+        : {
+            "aggregations.mentor.active": -1,
+            "aggregations.mentor.inactive": 1,
+          };
 
-    mentor.activeStatus = status;
+      await Admin.findByIdAndUpdate(
+        currUser.userId,
+        { $inc: aggregationUpdate },
+        { session }
+      );
+    }
+
+    if (department !== undefined) {
+      mentor.department = department;
+    }
+
     await mentor.save({ session });
-
-    await Admin.findByIdAndUpdate(
-      currUser.userId,
-      {
-        $inc: status
-          ? {
-              "aggregations.mentor.active": 1,
-              "aggregations.mentor.inactive": -1,
-            }
-          : {
-              "aggregations.mentor.active": -1,
-              "aggregations.mentor.inactive": 1,
-            },
-      },
-      { session }
-    );
-
     await session.commitTransaction();
 
     return res.status(200).json({
       success: true,
-      message: "Mentor status updated successfully",
-      data: { mentorId, status },
+      message: "Mentor updated successfully",
+      data: {
+        mentorId,
+        status: mentor.activeStatus,
+        department: mentor.department,
+      },
     });
   } catch (error) {
     await session.abortTransaction();
-    console.error(`Error while updating mentor status: ${error}`);
+    console.error(`Error while updating mentor: ${error}`);
     return res
       .status(500)
       .json({ success: false, error: "Internal server error" });

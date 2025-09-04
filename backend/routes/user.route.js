@@ -5,7 +5,7 @@ import {
 } from "../middlewares/auth.middlware.js";
 import {
   deactivateActivateAdmin,
-  deactivateActivateMentor,
+  updateMentor,
   getAdminById,
   getAdmins,
   getMentorById,
@@ -42,7 +42,7 @@ router.post(
   "/mentor/:mentorId",
   authMiddleware,
   authorizeRoles(["admin"]),
-  deactivateActivateMentor
+  updateMentor
 );
 router.delete(
   "/mentor/:mentorId",

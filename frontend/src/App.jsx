@@ -1,11 +1,11 @@
 import { Route, Routes, Navigate } from "react-router-dom"
-import LoginPage from "./pages/LoginPage.jsx"
-import AdminDashboard from "./components/AdminDashboard.jsx";
-import MentorDashboard from "./components/MentorDashboard.jsx";
+import LoginPage from "./pages/auth/LoginPage.jsx"
+import AdminDashboard from "./pages/dashboard/AdminDashboard.jsx";
+import MentorDashboard from "./pages/dashboard/MentorDashboard.jsx";
 import LoadingSpinner from "./components/utils/LoadingSpinner.jsx";
 import { Bounce, ToastContainer } from "react-toastify";
 import useAuthUser from "./hooks/queries/useAuthUser.js";
-import SuperAdminDashboard from "./components/SuperAdminDashboard.jsx";
+import SuperAdminDashboard from "./pages/dashboard/SuperAdminDashboard.jsx";
 
 function App() {
 
