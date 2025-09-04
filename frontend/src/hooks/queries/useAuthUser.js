@@ -11,6 +11,6 @@ export default function useAuthUser() {
         throw new Error(data?.error || "Failed to fetch user");
       return data.data;
     },
-    retry: 3,
+    retry: false,
   });
 }
