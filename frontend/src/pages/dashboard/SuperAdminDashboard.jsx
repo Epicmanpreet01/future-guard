@@ -20,12 +20,11 @@ import {
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import LoadingSpinner from "../../components/utils/LoadingSpinner.jsx";
-
 import { useLogoutMutation } from "../../hooks/mutations/authMutation.js";
 import useInstituteQuery from "../../hooks/queries/useInstitute.js";
 import useAggregationsQuery from "../../hooks/queries/useAggregations.js";
-import { useAdminsQuery } from "../../hooks/queries/useAdmins.js";
-
+import { useAddinstituteMutation, useRemoveInstituteMutation } from "../../hooks/mutations/instituteMutation.js";
+import { useUpdateStatusMutation } from "../../hooks/mutations/adminMutation.js";
 
 const getRiskTotal = (institute) => {
   const risk = institute?.adminId?.aggregations?.risk || {};
@@ -38,34 +37,37 @@ const getReadableId = (mongoId) => {
 };
 
 const getTotalMentor = (admin) => {
-  if (!admin) return 0 
+  if (!admin) return 0;
   const total = admin.aggregations?.mentor?.active + admin.aggregations?.mentor?.inactive;
-  return total
-}
+  return total;
+};
 
 const getSuccessRate = (admin) => {
-  if (!admin) return 0
-  const successRate = Math.round(admin.aggregations.success / admin.aggregations.risk.high) * 100
-  return successRate
-}
+  if (!admin) return 0;
+  if (admin.aggregations.success === 0) return 0;
+  const successRate = Math.round((admin.aggregations.success / admin.aggregations.risk.high) * 100);
+  return successRate;
+};
 
 // --- Main Component ---
 export default function SuperAdminDashboard({ authUser }) {
-  const navigator = useNavigate()
+  const navigator = useNavigate();
 
-  // queries and mutations
+  // Queries and mutations
   const { mutate: logoutMutate, isPending: logoutPending } = useLogoutMutation();
   const { data: institutes = [], isPending: institutePending, isError: instituteError } = useInstituteQuery();
-  const { data: aggregations = { risk: {high: 0, medium: 0, low: 0}, success: 0, institute: {active: 0, inactive: 0} }, isPending: aggregationsPending, isError: aggregationsError  } = useAggregationsQuery({role:authUser.role.toLowerCase()});
-  const { data: admins, isPending: adminsPending, isError: adminsError } = useAdminsQuery();
-  
-  // states
+  const { data: aggregations = { risk: { high: 0, medium: 0, low: 0 }, success: 0, institute: { active: 0, inactive: 0 } }, isPending: aggregationsPending, isError: aggregationsError } = useAggregationsQuery({ role: authUser.role.toLowerCase() });
+  const { mutate: addInstituteMutation, isPending: addInstitutePending } = useAddinstituteMutation();
+  const { mutate: removeInstituteMutation, isPending: removeInstitutePending } = useRemoveInstituteMutation();
+  const { mutate: updateStatusMutate, isPending: updatetatusPending } = useUpdateStatusMutation();
+
+  // States
   const [showAddInstituteModal, setShowAddInstituteModal] = useState(false);
   const [showEditInstituteModal, setShowEditInstituteModal] = useState(false);
   const [selectedInstitute, setSelectedInstitute] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  if (institutePending || aggregationsPending || adminsPending) {
+  if (institutePending || aggregationsPending) {
     return (
       <div className="flex items-center justify-center h-screen">
         <LoadingSpinner />
@@ -74,53 +76,54 @@ export default function SuperAdminDashboard({ authUser }) {
   }
 
   if (instituteError) {
-    toast.error("Failed to fetch institute data")
+    toast.error("Failed to fetch institute data");
   }
 
   if (aggregationsError) {
-    toast.error("Failed to fetch aggregations")
-  }
-
-  if (adminsError) {
-    toast.error("Failed to fetch admins")
+    toast.error("Failed to fetch aggregations");
   }
 
   // Stats
-  const globalRiskStats = aggregations.risk;
-  const globalSuccessStats = aggregations.success;
-  const globalInstituteStats = aggregations.institute;
+  const globalRiskStats = aggregations?.risk;
+  const globalSuccessStats = aggregations?.success;
+  const globalInstituteStats = aggregations?.institute;
 
   const riskDistribution = [
     { risk: "High", count: globalRiskStats.high, color: "bg-red-500" },
     { risk: "Medium", count: globalRiskStats.medium, color: "bg-yellow-500" },
     { risk: "Low", count: globalRiskStats.low, color: "bg-green-500" },
   ];
-  
+
   const topInstitutesByStudents = [...institutes]
     .sort((a, b) => getRiskTotal(b) - getRiskTotal(a))
     .slice(0, 5);
 
-  const maxTopInstituteStudents = topInstitutesByStudents.length > 0 ? topInstitutesByStudents[0].students : 1;
-
+  const maxTopInstituteStudents = topInstitutesByStudents.length > 0 ? getRiskTotal(topInstitutesByStudents[0]) : 1;
   const totalInstitutesForPercentage = globalInstituteStats.total;
-  
+
   const stats = {
     totalInstitutes: globalInstituteStats?.total || 0,
-    totalAdmins: admins?.length || 0,
-    avgSuccessRate: globalSuccessStats && globalRiskStats?.total
-      ? Math.round((globalSuccessStats / globalRiskStats.total) * 100)
-      : 0,
+    totalAdmins: globalInstituteStats?.total || 0,
+    avgSuccessRate: globalSuccessStats && globalRiskStats?.total ? Math.round((globalSuccessStats / globalRiskStats.total) * 100) : 0,
     totalHighRisk: globalRiskStats?.high || 0,
   };
 
   // --- Handlers ---
   const handleAddInstitute = (newInstitute) => {
+    addInstituteMutation(newInstitute);
+    setShowAddInstituteModal(false);
   };
 
   const handleUpdateInstitute = () => {
+    updateStatusMutate({
+      adminId: selectedInstitute.adminId._id,
+      status: JSON.parse(selectedInstitute.adminId.activeStatus),
+    });
+    setShowEditInstituteModal(false);
   };
 
   const handleDeleteInstitute = (id) => {
+    removeInstituteMutation({ instituteId: id });
   };
 
   const filteredInstitutes = institutes.filter(
@@ -133,14 +136,14 @@ export default function SuperAdminDashboard({ authUser }) {
   const handleLogout = () => {
     logoutMutate(undefined, {
       onSuccess: () => {
-        navigator('/login')
-      }
-    });  
-  }
+        navigator("/login");
+      },
+    });
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans flex flex-col">
-       <style>{`
+      <style>{`
         @keyframes fade-in-scale {
             0% {
                 opacity: 0;
@@ -154,7 +157,8 @@ export default function SuperAdminDashboard({ authUser }) {
         .animate-fade-in-scale {
             animation: fade-in-scale 0.2s ease-out forwards;
         }
-    `}</style>
+      `}</style>
+
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -179,14 +183,14 @@ export default function SuperAdminDashboard({ authUser }) {
                 </p>
                 <p className="text-xs text-gray-500">Government of Rajasthan</p>
               </div>
-               <button 
-                onClick={handleLogout} 
+              <button
+                onClick={handleLogout}
                 className="flex items-center px-4 py-2 text-sm font-medium text-red-700 bg-red-100 border border-red-200 rounded-lg hover:bg-red-200 transition-colors"
                 title="Log Out"
               >
-                { logoutPending &&  <LoadingSpinner /> }
-                { !logoutPending && <LogOut className="w-4 h-4 mr-2" /> }
-                { !logoutPending && "Log Out" }
+                {logoutPending && <LoadingSpinner />}
+                {!logoutPending && <LogOut className="w-4 h-4 mr-2" />}
+                {!logoutPending && "Log Out"}
               </button>
             </div>
           </div>
@@ -197,30 +201,10 @@ export default function SuperAdminDashboard({ authUser }) {
       <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         {/* Stats */}
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <StatCard
-            icon={Building}
-            title="Total Institutes"
-            value={stats.totalInstitutes}
-            color="text-blue-600"
-          />
-          <StatCard
-            icon={Users}
-            title="Total Admins"
-            value={stats.totalAdmins}
-            color="text-emerald-600"
-          />
-          <StatCard
-            icon={Target}
-            title="Avg. Success Rate"
-            value={`${stats.avgSuccessRate}%`}
-            color="text-green-600"
-          />
-          <StatCard
-            icon={AlertTriangle}
-            title="High Risk Students"
-            value={stats.totalHighRisk}
-            color="text-red-600"
-          />
+          <StatCard icon={Building} title="Total Institutes" value={stats.totalInstitutes} color="text-blue-600" />
+          <StatCard icon={Users} title="Total Admins" value={stats.totalAdmins} color="text-emerald-600" />
+          <StatCard icon={Target} title="Avg. Success Rate" value={`${stats.avgSuccessRate}%`} color="text-green-600" />
+          <StatCard icon={AlertTriangle} title="High Risk Students" value={stats.totalHighRisk} color="text-red-600" />
         </section>
 
         {/* Layout */}
@@ -240,11 +224,7 @@ export default function SuperAdminDashboard({ authUser }) {
                   <div
                     className="bg-green-200 h-8 flex items-center justify-center transition-all duration-500"
                     style={{
-                      width: `${
-                        (globalInstituteStats.active /
-                          totalInstitutesForPercentage) *
-                        100
-                      }%`,
+                      width: `${(globalInstituteStats.active / totalInstitutesForPercentage) * 100}%`,
                     }}
                   >
                     {globalInstituteStats.active > 0 && (
@@ -254,11 +234,7 @@ export default function SuperAdminDashboard({ authUser }) {
                   <div
                     className="bg-red-200 h-8 flex items-center justify-center transition-all duration-500"
                     style={{
-                      width: `${
-                        (globalInstituteStats.inactive /
-                          totalInstitutesForPercentage) *
-                        100
-                      }%`,
+                      width: `${(globalInstituteStats.inactive / totalInstitutesForPercentage) * 100}%`,
                     }}
                   >
                     {globalInstituteStats.inactive > 0 && (
@@ -268,25 +244,25 @@ export default function SuperAdminDashboard({ authUser }) {
                 </div>
               </div>
               <div className="border-t border-gray-200 pt-6">
-                  <h4 className="text-sm font-semibold text-gray-700 mb-4">Top Institutes by Student Count</h4>
-                  {topInstitutesByStudents.length > 0 ? (
-                      <div className="space-y-4">
-                          {topInstitutesByStudents.map((inst) => (
-                              <div key={inst._id} className="flex items-center">
-                                  <p className="font-medium text-gray-800 text-sm w-1/2 truncate pr-4">{inst.instituteName}</p>
-                                  <div className="w-1/2 flex items-center">
-                                      <div className="flex-grow bg-gray-200 rounded-full h-4 mr-2">
-                                          <div 
-                                              className="bg-blue-400 h-4 rounded-full transition-all duration-500"
-                                              style={{ width: `${(getRiskTotal(inst) / maxTopInstituteStudents) * 100}%` }}
-                                          ></div>
-                                      </div>
-                                      <span className="font-bold text-blue-500 w-12 text-right">{getRiskTotal(inst)}</span>
-                                  </div>
-                              </div>
-                          ))}
+                <h4 className="text-sm font-semibold text-gray-700 mb-4">Top Institutes by Student Count</h4>
+                {topInstitutesByStudents.length > 0 ? (
+                  <div className="space-y-4">
+                    {topInstitutesByStudents.map((inst) => (
+                      <div key={inst._id} className="flex items-center">
+                        <p className="font-medium text-gray-800 text-sm w-1/2 truncate pr-4">{inst.instituteName}</p>
+                        <div className="w-1/2 flex items-center">
+                          <div className="flex-grow bg-gray-200 rounded-full h-4 mr-2">
+                            <div
+                              className="bg-blue-400 h-4 rounded-full transition-all duration-500"
+                              style={{ width: `${(getRiskTotal(inst) / maxTopInstituteStudents) * 100}%` }}
+                            ></div>
+                          </div>
+                          <span className="font-bold text-blue-500 w-12 text-right">{getRiskTotal(inst)}</span>
+                        </div>
                       </div>
-                  ) : <p className="text-gray-500 text-center py-4">No institute data available.</p>}
+                    ))}
+                  </div>
+                ) : <p className="text-gray-500 text-center py-4">No institute data available.</p>}
               </div>
             </div>
 
@@ -319,59 +295,33 @@ export default function SuperAdminDashboard({ authUser }) {
                 <table className="w-full">
                   <thead className="bg-gray-50 sticky top-0 z-10">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Institute
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Admin
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Mentors
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Students
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Success
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        High Risk
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Institute</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin</th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Mentors</th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Students</th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Success</th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">High Risk</th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredInstitutes.length > 0 ? filteredInstitutes.map((i) => (
                       <tr key={i._id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4">
-                          <div className="text-sm font-medium text-gray-900">
-                            {i.instituteName}
-                          </div>
+                          <div className="text-sm font-medium text-gray-900">{i.instituteName}</div>
                           <div className="text-sm text-gray-500">{getReadableId(i._id)}</div>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-900">{i.adminId.name}</td>
                         <td className="px-6 py-4 text-sm text-center text-gray-900">{getTotalMentor(i.adminId)}</td>
                         <td className="px-6 py-4 text-sm text-center text-gray-900">{getRiskTotal(i)}</td>
-                        <td className="px-6 py-4 text-sm text-center text-gray-900">
-                          {getSuccessRate(i.adminId)}%
-                        </td>
-                        <td className="px-6 py-4 text-sm text-red-600 text-center font-medium">
-                          {i.adminId.aggregations.risk.high}
-                        </td>
+                        <td className="px-6 py-4 text-sm text-center text-gray-900">{getSuccessRate(i.adminId)}%</td>
+                        <td className="px-6 py-4 text-sm text-red-600 text-center font-medium">{i.adminId.aggregations.risk.high}</td>
                         <td className="px-6 py-4 text-sm text-center">
                           <span
-                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              i.adminId.activeStatus
-                                ? "bg-green-100 text-green-700"
-                                : "bg-red-100 text-red-700"
-                            }`}
+                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${i.adminId.activeStatus ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
                           >
-                            {i.adminId.activeStatus ? "Active": "Inactive"}
+                            {i.adminId.activeStatus ? "Active" : "Inactive"}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-sm font-medium text-center">
@@ -398,11 +348,11 @@ export default function SuperAdminDashboard({ authUser }) {
                       </tr>
                     )) : (
                       <tr>
-                          <td colSpan="8" className="text-center py-12 text-gray-500">
-                              No institutes found.
-                          </td>
+                        <td colSpan="8" className="text-center py-12 text-gray-500">
+                          No institutes found.
+                        </td>
                       </tr>
-                )}
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -411,83 +361,69 @@ export default function SuperAdminDashboard({ authUser }) {
 
           {/* Right Sidebar */}
           <aside className="space-y-6">
-            {/* Quick Actions */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Quick Actions
-              </h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
               <div className="space-y-3">
-                <ActionButton
-                  icon={Settings}
-                  text="System Config"
-                  onClick={() => alert("Open system config")}
-                />
-                <ActionButton
-                  icon={Download}
-                  text="Export Global Reports"
-                  onClick={() => alert("Exporting reports...")}
-                />
+                <ActionButton icon={Settings} text="System Config" onClick={() => alert("Open system config")} />
+                <ActionButton icon={Download} text="Export Global Reports" onClick={() => alert("Exporting reports...")} />
               </div>
             </div>
-            
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-6">All Universities Avg Student Risk</h3>
-                <div className="space-y-4">
-                    {riskDistribution.map((item) => (
-                       <div key={item.risk}>
-                            <div className="flex justify-between mb-1">
-                                <span className="text-sm font-medium text-gray-700">{item.risk}</span>
-                                <span className="text-sm font-medium text-gray-700">{item.count}</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2.5">
-                                <div className={`${item.color} h-2.5 rounded-full`} style={{ width: `${(item.count / globalRiskStats.total) * 100}%` }}></div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">All Universities Avg Student Risk</h3>
+              <div className="space-y-4">
+                {riskDistribution.map((item) => (
+                  <div key={item.risk}>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-sm font-medium text-gray-700">{item.risk}</span>
+                      <span className="text-sm font-medium text-gray-700">{item.count}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                      <div className={`${item.color} h-2.5 rounded-full`} style={{ width: `${(item.count / globalRiskStats.total) * 100}%` }}></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-            
-             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-6">Universities Risk Distribution</h3>
-                <div className="space-y-4">
-                    {riskDistribution.map((item) => (
-                       <div key={item.risk}>
-                            <div className="flex justify-between mb-1">
-                                <span className="text-sm font-medium text-gray-700">{item.risk}</span>
-                                <span className="text-sm font-medium text-gray-700">{item.count}</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2.5">
-                                <div className={`${item.color} h-2.5 rounded-full`} style={{ width: `${(item.count / globalRiskStats.total) * 100}%` }}></div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Universities Performance</h3>
-                <div className="space-y-4">
-                    {institutes.slice(0,4).map((inst) => (
-                        <div key={inst.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <div>
-                                <p className="text-sm font-medium text-gray-900">{inst.instituteName}</p>
-                                <p className="text-xs text-gray-500">Success Score: {getSuccessRate(inst.adminId) || 0}%</p>
-                            </div>
-                            <div className={`flex items-center space-x-1 ${getSuccessRate(inst.adminId) >= 85 ? 'text-green-500' : 'text-red-500'}`}>
-                                {inst.interventionSuccess >= 85 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-                                <span className="text-sm font-bold">{getSuccessRate(inst.adminId) || 0}%</span>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">Universities Risk Distribution</h3>
+              <div className="space-y-4">
+                {riskDistribution.map((item) => (
+                  <div key={item.risk}>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-sm font-medium text-gray-700">{item.risk}</span>
+                      <span className="text-sm font-medium text-gray-700">{item.count}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                      <div className={`${item.color} h-2.5 rounded-full`} style={{ width: `${(item.count / globalRiskStats.total) * 100}%` }}></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Universities Performance</h3>
+              <div className="space-y-4">
+                {institutes.slice(0, 4).map((inst) => (
+                  <div key={inst._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{inst.instituteName}</p>
+                      <p className="text-xs text-gray-500">Success Score: {getSuccessRate(inst.adminId) || 0}%</p>
+                    </div>
+                    <div className={`flex items-center space-x-1 ${getSuccessRate(inst.adminId) >= 85 ? 'text-green-500' : 'text-red-500'}`}>
+                      {inst.interventionSuccess >= 85 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                      <span className="text-sm font-bold">{getSuccessRate(inst.adminId) || 0}%</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </aside>
         </section>
       </main>
-      
+
       <footer className="bg-white border-t border-gray-200 mt-8">
         <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 text-center text-sm text-gray-500">
-            <p>&copy; {new Date().getFullYear()} FutureGuard. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} FutureGuard. All rights reserved.</p>
         </div>
       </footer>
 
@@ -579,24 +515,24 @@ const InputField = ({ label, ...props }) => (
 
 const AddInstituteModal = ({ show, onClose, onAdd }) => {
   const [newInstitute, setNewInstitute] = useState({
+    instituteName: "",
     name: "",
-    admin: "",
-    adminId: "",
-    adminPassword: "",
+    email: "",
+    password: "",
   });
 
   const handleAddClick = () => {
     onAdd(newInstitute);
-    setNewInstitute({ name: "", admin: "", adminId: "", adminPassword: ""});
-  }
+    setNewInstitute({ instituteName: "", name: "", email: "", password: "" });
+  };
 
   return (
     <Modal show={show} onClose={onClose} title="Add New Institute">
       <div className="space-y-4">
-        <InputField label="Institute Name" type="text" placeholder="e.g., Central University" value={newInstitute.name} onChange={(e) => setNewInstitute({ ...newInstitute, name: e.target.value })}/>
-        <InputField label="Admin Name" type="text" placeholder="e.g., Dr. Jane Doe" value={newInstitute.admin} onChange={(e) => setNewInstitute({ ...newInstitute, admin: e.target.value })} />
-        <InputField label="Admin ID" type="text" placeholder="e.g., ADM001" value={newInstitute.adminId} onChange={(e) => setNewInstitute({ ...newInstitute, adminId: e.target.value })}/>
-        <InputField label="Admin Password" type="password" placeholder="••••••••" value={newInstitute.adminPassword} onChange={(e) => setNewInstitute({ ...newInstitute, adminPassword: e.target.value })}/>
+        <InputField label="Institute Name" type="text" placeholder="e.g., Central University" value={newInstitute.instituteName} onChange={(e) => setNewInstitute({ ...newInstitute, instituteName: e.target.value })} />
+        <InputField label="Admin Name" type="text" placeholder="e.g., Dr. Jane Doe" value={newInstitute.name} onChange={(e) => setNewInstitute({ ...newInstitute, name: e.target.value })} />
+        <InputField label="Admin Email ID" type="text" placeholder="e.g., mail@gmail.com" value={newInstitute.email} onChange={(e) => setNewInstitute({ ...newInstitute, email: e.target.value })} />
+        <InputField label="Admin Password" type="password" placeholder="••••••••" value={newInstitute.password} onChange={(e) => setNewInstitute({ ...newInstitute, password: e.target.value })} />
       </div>
       <div className="mt-6 flex justify-end space-x-3">
         <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
@@ -606,37 +542,71 @@ const AddInstituteModal = ({ show, onClose, onAdd }) => {
   );
 };
 
-
 const EditInstituteModal = ({ show, onClose, institute, setInstitute, onUpdate }) => {
-    if(!institute) return null;
+  if (!institute) return null;
 
-    return (
-        <Modal show={show} onClose={onClose} title="Edit Institute Details">
-             <div className="space-y-4">
-                <InputField label="Institute Name" type="text" value={institute.name} onChange={e => setInstitute({...institute, name: e.target.value})} />
-                <InputField label="Admin Name" type="text" value={institute.admin} onChange={e => setInstitute({...institute, admin: e.target.value})} />
-                <InputField label="Admin ID" type="text" value={institute.adminId} onChange={e => setInstitute({...institute, adminId: e.target.value})} />
-                 <div className="grid grid-cols-2 gap-4">
-                    <InputField label="Mentors" type="number" value={institute.mentors} onChange={e => setInstitute({...institute, mentors: parseInt(e.target.value) || 0})} />
-                    <InputField label="Students" type="number" value={institute.students} onChange={e => setInstitute({...institute, students: parseInt(e.target.value) || 0})} />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                    <InputField label="Success Rate (%)" type="number" value={institute.interventionSuccess} onChange={e => setInstitute({...institute, interventionSuccess: parseInt(e.target.value) || 0})} />
-                    <InputField label="High Risk Students" type="number" value={institute.highRisk} onChange={e => setInstitute({...institute, highRisk: parseInt(e.target.value) || 0})} />
-                </div>
-                <div>
-                   <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                   <select value={institute.status} onChange={e => setInstitute({...institute, status: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                       <option value="Active">Active</option>
-                       <option value="Inactive">Inactive</option>
-                   </select>
-               </div>
-            </div>
-            <div className="mt-6 flex justify-end space-x-3">
-                <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
-                <button onClick={onUpdate} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Update Institute</button>
-            </div>
-        </Modal>
-    );
-}
-
+  return (
+    <Modal show={show} onClose={onClose} title="Edit Institute Details">
+      <div className="space-y-4">
+        <InputField
+          label="Institute Name"
+          type="text"
+          value={institute.instituteName}
+          disabled
+          onChange={(e) => setInstitute({ ...institute, instituteName: e.target.value })}
+        />
+        <InputField
+          label="Admin Name"
+          type="text"
+          value={institute.adminId?.name || ""}
+          disabled
+          onChange={(e) =>
+            setInstitute({
+              ...institute,
+              adminId: { ...institute.adminId, name: e.target.value },
+            })
+          }
+        />
+        <InputField
+          label="Admin Email ID"
+          type="text"
+          value={institute.adminId?.email || ""}
+          disabled
+          onChange={(e) => setInstitute({
+            ...institute,
+            adminId: { ...institute.adminId, email: e.target.value }
+          })}
+        />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+          <select
+            value={institute.adminId.activeStatus}
+            onChange={(e) => setInstitute({
+              ...institute,
+              adminId: { ...institute.adminId, activeStatus: e.target.value }
+            })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+          >
+            <option value="" disabled className="text-gray-500">Select status</option>
+            <option value={true}>Active</option>
+            <option value={false}>Inactive</option>
+          </select>
+        </div>
+      </div>
+      <div className="mt-6 flex justify-end space-x-3">
+        <button
+          onClick={onClose}
+          className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={onUpdate}
+          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+        >
+          Update Institute
+        </button>
+      </div>
+    </Modal>
+  );
+};

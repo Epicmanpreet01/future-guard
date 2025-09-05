@@ -3,7 +3,7 @@ import axios from "axios";
 
 const useAggregationsQuery = ({ role }) => {
   return useQuery({
-    queryKey: ["aggregations", role],
+    queryKey: ["aggregations"],
     queryFn: async () => {
       try {
         const res = await axios.get(`/api/aggregation/${role}/stats`);
