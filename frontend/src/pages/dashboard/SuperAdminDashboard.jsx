@@ -20,11 +20,16 @@ import {
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import LoadingSpinner from "../../components/utils/LoadingSpinner.jsx";
+import { saveAs } from 'file-saver';
+
 import { useLogoutMutation } from "../../hooks/mutations/authMutation.js";
 import useInstituteQuery from "../../hooks/queries/useInstitute.js";
 import useAggregationsQuery from "../../hooks/queries/useAggregations.js";
 import { useAddinstituteMutation, useRemoveInstituteMutation } from "../../hooks/mutations/instituteMutation.js";
 import { useUpdateStatusMutation } from "../../hooks/mutations/adminMutation.js";
+
+
+
 
 const getRiskTotal = (institute) => {
   const risk = institute?.adminId?.aggregations?.risk || {};
@@ -139,6 +144,22 @@ export default function SuperAdminDashboard({ authUser }) {
         navigator("/login");
       },
     });
+  };
+
+  const exportInstituteTableCSV = () => {
+    const table = document.getElementById("instituteTable");
+    if (!table) return;
+
+    const rows = Array.from(table.querySelectorAll("tr"));
+    const csv = rows
+      .map(row => {
+        const cells = Array.from(row.querySelectorAll("th, td"));
+        return cells.map(cell => `"${cell.innerText}"`).join(",");
+      })
+      .join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    saveAs(blob, "institutes.csv");
   };
 
   return (
@@ -292,7 +313,7 @@ export default function SuperAdminDashboard({ authUser }) {
                 </div>
               </div>
               <div className="max-h-[800px] overflow-y-auto">
-                <table className="w-full">
+                <table id="instituteTable" className="w-full">
                   <thead className="bg-gray-50 sticky top-0 z-10">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Institute</th>
@@ -365,7 +386,7 @@ export default function SuperAdminDashboard({ authUser }) {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
               <div className="space-y-3">
                 <ActionButton icon={Settings} text="System Config" onClick={() => alert("Open system config")} />
-                <ActionButton icon={Download} text="Export Global Reports" onClick={() => alert("Exporting reports...")} />
+                <ActionButton icon={Download} text="Export Global Reports" onClick={exportInstituteTableCSV} />
               </div>
             </div>
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
