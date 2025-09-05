@@ -146,8 +146,14 @@ export const getUser = async (req, res) => {
       .status(401)
       .json({ success: false, error: "Unauthorized access" });
 
-  const currUser = await User.findById(user.userId).select("-password");
-
+  let currUser;
+  if (user.role === "superAdmin") {
+    currUser = await User.findById(user.userId).select("-hashedPassword");
+  } else {
+    currUser = await User.findById(user.userId)
+      .select("-hashedPassword")
+      .populate("instituteId");
+  }
   return res.status(200).json({
     success: true,
     message: "User details fetched successfully",

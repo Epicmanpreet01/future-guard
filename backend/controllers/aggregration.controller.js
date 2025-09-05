@@ -44,13 +44,29 @@ export const adminAggreg = async (req, res) => {
   const { user: currUser } = req;
 
   try {
-    const aggregations = await Admin.findById(currUser.userId).select(
+    const adminDoc = await Admin.findById(currUser.userId).select(
       "aggregations"
     );
-    if (!aggregations)
+    if (!adminDoc)
       return res
         .status(404)
         .json({ success: false, error: "aggregations not found" });
+
+    const aggregations =
+      adminDoc.aggregations.toObject?.() || adminDoc.aggregations;
+
+    const risk = aggregations.risk || { high: 0, medium: 0, low: 0 };
+    const mentor = aggregations.mentor || { active: 0, inactive: 0 };
+
+    aggregations.risk = {
+      ...risk,
+      total: (risk.high || 0) + (risk.medium || 0) + (risk.low || 0),
+    };
+
+    aggregations.mentor = {
+      ...mentor,
+      total: (mentor.active || 0) + (mentor.inactive || 0),
+    };
 
     return res.status(200).json({
       success: true,

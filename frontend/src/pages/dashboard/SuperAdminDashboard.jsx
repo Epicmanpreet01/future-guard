@@ -20,7 +20,6 @@ import {
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import LoadingSpinner from "../../components/utils/LoadingSpinner.jsx";
-import { saveAs } from 'file-saver';
 
 import { useLogoutMutation } from "../../hooks/mutations/authMutation.js";
 import useInstituteQuery from "../../hooks/queries/useInstitute.js";
@@ -28,31 +27,10 @@ import useAggregationsQuery from "../../hooks/queries/useAggregations.js";
 import { useAddinstituteMutation, useRemoveInstituteMutation } from "../../hooks/mutations/instituteMutation.js";
 import { useUpdateStatusMutation } from "../../hooks/mutations/adminMutation.js";
 
+import { getRiskTotal, getReadableId, getTotalMentor, getSuccessRate } from "../../utils/dashboardUtils.js";
+import { exportInstituteTableCSV } from "../../utils/dashboardUtils.js";
 
 
-
-const getRiskTotal = (institute) => {
-  const risk = institute?.adminId?.aggregations?.risk || {};
-  return (risk.high || 0) + (risk.medium || 0) + (risk.low || 0);
-};
-
-const getReadableId = (mongoId) => {
-  if (!mongoId) return "";
-  return mongoId.toString().slice(-6).toUpperCase();
-};
-
-const getTotalMentor = (admin) => {
-  if (!admin) return 0;
-  const total = admin.aggregations?.mentor?.active + admin.aggregations?.mentor?.inactive;
-  return total;
-};
-
-const getSuccessRate = (admin) => {
-  if (!admin) return 0;
-  if (admin.aggregations.success === 0) return 0;
-  const successRate = Math.round((admin.aggregations.success / admin.aggregations.risk.high) * 100);
-  return successRate;
-};
 
 // --- Main Component ---
 export default function SuperAdminDashboard({ authUser }) {
@@ -146,21 +124,6 @@ export default function SuperAdminDashboard({ authUser }) {
     });
   };
 
-  const exportInstituteTableCSV = () => {
-    const table = document.getElementById("instituteTable");
-    if (!table) return;
-
-    const rows = Array.from(table.querySelectorAll("tr"));
-    const csv = rows
-      .map(row => {
-        const cells = Array.from(row.querySelectorAll("th, td"));
-        return cells.map(cell => `"${cell.innerText}"`).join(",");
-      })
-      .join("\n");
-
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    saveAs(blob, "institutes.csv");
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans flex flex-col">
@@ -386,7 +349,7 @@ export default function SuperAdminDashboard({ authUser }) {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
               <div className="space-y-3">
                 <ActionButton icon={Settings} text="System Config" onClick={() => alert("Open system config")} />
-                <ActionButton icon={Download} text="Export Global Reports" onClick={exportInstituteTableCSV} />
+                <ActionButton icon={Download} text="Export Global Reports" onClick={() => exportInstituteTableCSV('instituteTable', 'institute')} />
               </div>
             </div>
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -574,29 +537,18 @@ const EditInstituteModal = ({ show, onClose, institute, setInstitute, onUpdate }
           type="text"
           value={institute.instituteName}
           disabled
-          onChange={(e) => setInstitute({ ...institute, instituteName: e.target.value })}
         />
         <InputField
           label="Admin Name"
           type="text"
           value={institute.adminId?.name || ""}
           disabled
-          onChange={(e) =>
-            setInstitute({
-              ...institute,
-              adminId: { ...institute.adminId, name: e.target.value },
-            })
-          }
         />
         <InputField
           label="Admin Email ID"
           type="text"
           value={institute.adminId?.email || ""}
           disabled
-          onChange={(e) => setInstitute({
-            ...institute,
-            adminId: { ...institute.adminId, email: e.target.value }
-          })}
         />
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
