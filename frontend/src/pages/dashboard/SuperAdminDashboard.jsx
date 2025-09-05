@@ -1,21 +1,18 @@
 /* eslint-disable no-unused-vars */
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Building,
   UserPlus,
   Settings,
-  BarChart3,
   Search,
   Trash2,
   Eye,
   Download,
-  Brain,
   Shield,
   X,
   TrendingUp,
   TrendingDown,
   AlertTriangle,
-  Activity,
   Target,
   Users,
   LogOut,
@@ -35,14 +32,31 @@ const getRiskTotal = (institute) => {
   return (risk.high || 0) + (risk.medium || 0) + (risk.low || 0);
 };
 
+const getReadableId = (mongoId) => {
+  if (!mongoId) return "";
+  return mongoId.toString().slice(-6).toUpperCase();
+};
+
+const getTotalMentor = (admin) => {
+  if (!admin) return 0 
+  const total = admin.aggregations?.mentor?.active + admin.aggregations?.mentor?.inactive;
+  return total
+}
+
+const getSuccessRate = (admin) => {
+  if (!admin) return 0
+  const successRate = Math.round(admin.aggregations.success / admin.aggregations.risk.high) * 100
+  return successRate
+}
+
 // --- Main Component ---
 export default function SuperAdminDashboard({ authUser }) {
   const navigator = useNavigate()
 
   // queries and mutations
   const { mutate: logoutMutate, isPending: logoutPending } = useLogoutMutation();
-  const { data: institutes, isPending: institutePending, isError: instituteError } = useInstituteQuery();
-  const { data: aggregations, isPending: aggregationsPending, isError: aggregationsError  } = useAggregationsQuery({role:authUser.role.toLowerCase()});
+  const { data: institutes = [], isPending: institutePending, isError: instituteError } = useInstituteQuery();
+  const { data: aggregations = { risk: {high: 0, medium: 0, low: 0}, success: 0, institute: {active: 0, inactive: 0} }, isPending: aggregationsPending, isError: aggregationsError  } = useAggregationsQuery({role:authUser.role.toLowerCase()});
   const { data: admins, isPending: adminsPending, isError: adminsError } = useAdminsQuery();
   
   // states
@@ -72,9 +86,9 @@ export default function SuperAdminDashboard({ authUser }) {
   }
 
   // Stats
-  const globalRiskStats = aggregations?.risk || { high: 0, medium: 0, low: 0 };
-  const globalSuccessStats = aggregations?.success || 0;
-  const globalInstituteStats = aggregations?.institute || { active: 0, inactive: 0 };
+  const globalRiskStats = aggregations.risk;
+  const globalSuccessStats = aggregations.success;
+  const globalInstituteStats = aggregations.institute;
 
   const riskDistribution = [
     { risk: "High", count: globalRiskStats.high, color: "bg-red-500" },
@@ -108,8 +122,6 @@ export default function SuperAdminDashboard({ authUser }) {
 
   const handleDeleteInstitute = (id) => {
   };
-
-  console.log(institutes)
 
   const filteredInstitutes = institutes.filter(
     (i) =>
@@ -255,27 +267,27 @@ export default function SuperAdminDashboard({ authUser }) {
                   </div>
                 </div>
               </div>
-                <div className="border-t border-gray-200 pt-6">
-                    <h4 className="text-sm font-semibold text-gray-700 mb-4">Top Institutes by Student Count</h4>
-                    {topInstitutesByStudents.length > 0 ? (
-                        <div className="space-y-4">
-                            {topInstitutesByStudents.map((inst) => (
-                                <div key={inst.id} className="flex items-center">
-                                    <p className="font-medium text-gray-800 text-sm w-1/2 truncate pr-4">{inst.name}</p>
-                                    <div className="w-1/2 flex items-center">
-                                        <div className="flex-grow bg-gray-200 rounded-full h-4 mr-2">
-                                            <div 
-                                                className="bg-blue-400 h-4 rounded-full transition-all duration-500"
-                                                style={{ width: `${(inst.students / maxTopInstituteStudents) * 100}%` }}
-                                            ></div>
-                                        </div>
-                                        <span className="font-bold text-blue-500 w-12 text-right">{inst.students}</span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    ) : <p className="text-gray-500 text-center py-4">No institute data available.</p>}
-                </div>
+              <div className="border-t border-gray-200 pt-6">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-4">Top Institutes by Student Count</h4>
+                  {topInstitutesByStudents.length > 0 ? (
+                      <div className="space-y-4">
+                          {topInstitutesByStudents.map((inst) => (
+                              <div key={inst._id} className="flex items-center">
+                                  <p className="font-medium text-gray-800 text-sm w-1/2 truncate pr-4">{inst.instituteName}</p>
+                                  <div className="w-1/2 flex items-center">
+                                      <div className="flex-grow bg-gray-200 rounded-full h-4 mr-2">
+                                          <div 
+                                              className="bg-blue-400 h-4 rounded-full transition-all duration-500"
+                                              style={{ width: `${(getRiskTotal(inst) / maxTopInstituteStudents) * 100}%` }}
+                                          ></div>
+                                      </div>
+                                      <span className="font-bold text-blue-500 w-12 text-right">{getRiskTotal(inst)}</span>
+                                  </div>
+                              </div>
+                          ))}
+                      </div>
+                  ) : <p className="text-gray-500 text-center py-4">No institute data available.</p>}
+              </div>
             </div>
 
             {/* Institute Management Table */}
@@ -335,31 +347,31 @@ export default function SuperAdminDashboard({ authUser }) {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredInstitutes.length > 0 ? filteredInstitutes.map((i) => (
-                      <tr key={i.id} className="hover:bg-gray-50 transition-colors">
+                      <tr key={i._id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4">
                           <div className="text-sm font-medium text-gray-900">
-                            {i.name}
+                            {i.instituteName}
                           </div>
-                          <div className="text-sm text-gray-500">{i.id}</div>
+                          <div className="text-sm text-gray-500">{getReadableId(i._id)}</div>
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{i.admin}</td>
-                        <td className="px-6 py-4 text-sm text-center text-gray-900">{i.mentors}</td>
-                        <td className="px-6 py-4 text-sm text-center text-gray-900">{i.students}</td>
+                        <td className="px-6 py-4 text-sm text-gray-900">{i.adminId.name}</td>
+                        <td className="px-6 py-4 text-sm text-center text-gray-900">{getTotalMentor(i.adminId)}</td>
+                        <td className="px-6 py-4 text-sm text-center text-gray-900">{getRiskTotal(i)}</td>
                         <td className="px-6 py-4 text-sm text-center text-gray-900">
-                          {i.interventionSuccess}%
+                          {getSuccessRate(i.adminId)}%
                         </td>
                         <td className="px-6 py-4 text-sm text-red-600 text-center font-medium">
-                          {i.highRisk}
+                          {i.adminId.aggregations.risk.high}
                         </td>
                         <td className="px-6 py-4 text-sm text-center">
                           <span
                             className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              i.status === "Active"
+                              i.adminId.activeStatus
                                 ? "bg-green-100 text-green-700"
                                 : "bg-red-100 text-red-700"
                             }`}
                           >
-                            {i.status}
+                            {i.adminId.activeStatus ? "Active": "Inactive"}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-sm font-medium text-center">
@@ -375,7 +387,7 @@ export default function SuperAdminDashboard({ authUser }) {
                               <Eye className="w-5 h-5" />
                             </button>
                             <button
-                              onClick={() => handleDeleteInstitute(i.id)}
+                              onClick={() => handleDeleteInstitute(i._id)}
                               className="text-red-500 hover:text-red-800 transition-colors"
                               title="Delete Institute"
                             >
@@ -458,12 +470,12 @@ export default function SuperAdminDashboard({ authUser }) {
                     {institutes.slice(0,4).map((inst) => (
                         <div key={inst.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                             <div>
-                                <p className="text-sm font-medium text-gray-900">{inst.name}</p>
-                                <p className="text-xs text-gray-500">Success Score: {inst.interventionSuccess || 0}%</p>
+                                <p className="text-sm font-medium text-gray-900">{inst.instituteName}</p>
+                                <p className="text-xs text-gray-500">Success Score: {getSuccessRate(inst.adminId) || 0}%</p>
                             </div>
-                            <div className={`flex items-center space-x-1 ${inst.interventionSuccess >= 85 ? 'text-green-500' : 'text-red-500'}`}>
+                            <div className={`flex items-center space-x-1 ${getSuccessRate(inst.adminId) >= 85 ? 'text-green-500' : 'text-red-500'}`}>
                                 {inst.interventionSuccess >= 85 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-                                <span className="text-sm font-bold">{inst.interventionSuccess || 0}%</span>
+                                <span className="text-sm font-bold">{getSuccessRate(inst.adminId) || 0}%</span>
                             </div>
                         </div>
                     ))}
