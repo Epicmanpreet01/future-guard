@@ -28,7 +28,8 @@ import {
   InputField, 
   LoadingSpinner 
 } from '../../components/DashboardComponents.jsx';
-
+import Papa from "papaparse";
+import * as XLSX from "xlsx";
 import { useLogoutMutation } from "../../hooks/mutations/authMutation.js";
 import { useMentorsQuery } from "../../hooks/queries/useMentor.js";
 import { toast } from "react-toastify";
@@ -36,6 +37,7 @@ import useAggregationsQuery from "../../hooks/queries/useAggregations.js";
 
 import { getTotalMentor, getRiskTotal, getReadableId, getSuccessRate, getTotalStudents, exportInstituteTableCSV } from "../../utils/dashboardUtils.js";
 import { useAddMentorMutation, useRemoveMentorMutation, useUpdateMentorMutation } from "../../hooks/mutations/mentorMutation.js";
+import { useGenerateDraft, useSaveConfig, useLockConfig } from "../../hooks/mutations/configMutation.js";
 
 const allInstituteDepartments = [
   'Accountancy & Business Statistics (ABST)', 'Aerospace Engineering', 'Agricultural Economics', 'Agricultural Sciences', 'Agronomy', 'AI & Data Science', 'Anatomy', 'Animal Husbandry', 'Architecture & Planning', 'Arts', 'Bachelor in Arts (B.A.)', 'Bachelor in Commerce (B.Com.)', 'Bachelor in Computer Applications (B.C.A.)', 'Bachelor in Physical Education (B.P.Ed.)', 'Bachelor in Science (B.Sc.) Computer Science', 'Bachelor in Science (B.Sc.) Hons.', 'Bachelor in Science (B.Sc.) Medical & Non-Medical', 'Bachelors in Arts (B.A.)', 'Banking & Insurance', 'Biochemistry', 'Bio-Informatics', 'Biotechnology', 'Biotechnology / Bioengineering', 'Botany', 'Business Administration', 'Business Administration (BBA / MBA)', 'Carrier Oriented Courses', 'Chemical Engineering', 'Chemistry', 'Civil & Family Law', 'Civil Engineering (CE)', 'Commerce (B.Com, M.Com)', 'Community Medicine', 'Computer Science & Applications', 'Computer Science & Engineering (CSE)', 'Constitutional Law', 'Corporate Law', 'Criminal Law', 'Dairy Science', 'Dentistry', 'Dermatology', 'Design (Fashion, Industrial, Graphic, etc.)', 'Economic Administration and Financial Management (EAFM)', 'Economics', 'Education (B.Ed, M.Ed)', 'Electrical Engineering (EE)', 'Electronics & Communication Engineering (ECE)', 'Engineering', 'English / Literature', 'Entomology', 'Environmental Auditing', 'Environmental Science', 'Environmental Studies', 'Film & Media Studies', 'Finance & Accounting', 'Fine Arts', 'Food Technology', 'Forensic Medicine', 'Forestry', 'Geography', 'Geology', 'Gynecology & Obstetrics', 'Hindi', 'History', 'Horticulture', 'Human Rights', 'Information Technology (IT)', 'Journalism & Mass Communication', 'Labour Law', 'Languages (Hindi, Sanskrit, Foreign Languages etc.)', 'Law (LLB, LLM)', 'Library & Information Science', 'M.A.I English', 'M.Sc.I Zoology', 'Management Studies', 'Marketing', 'Master in Arts (M.A.) English & History', 'Master in Arts (M.A.) Music Instrumental, Music Vocal, Economics, Public Administration and Dance', 'Master in Commerce (M.Com.) Semester System', 'Master in Science (M.Sc.) Information Technology', 'Mathematics', 'Mechanical Engineering (ME)', 'Medicine', 'Medicine (MBBS)', 'Metallurgical & Materials Engineering', 'Microbiology', 'Mining Engineering', 'Music, Theatre & Dance', 'Nursing', 'Orthopedics', 'Pathology', 'Pediatrics', 'Performing Arts (Music, Dance, Theatre)', 'Petroleum Engineering', 'Pharmacology', 'Pharmacy', 'Philosophy', 'Physical Education & Sports', 'Physics', 'Physiology', 'Physiotherapy', 'Plant Breeding & Genetics', 'Plant Pathology', 'Political Science', 'Post Graduate Diploma in Dress Designing', 'Post Graduate Diploma in Mass Communication', 'Postgraduate Diploma in Translation (English to Hindi)', 'Psychiatry', 'Psychology', 'Public Administration', 'Public Health', 'Sanskrit', 'Social Work', 'Sociology', 'Soil Science', 'Statistics', 'Surgery', 'Tourism & Travel Management', 'Tribal Studies', 'Urdu / Persian', 'Veterinary Anatomy', 'Veterinary Medicine', 'Zoology'
@@ -535,29 +537,220 @@ const EditMentorModal = ({ show, onClose, mentor, setMentor, onUpdate }) => {
 };
 
 
-const ConfigModal = ({ show, onClose }) => {
+const ConfigModal = ({ show, onClose, instituteId }) => {
   const [files, setFiles] = useState([]);
-  const handleFileChange = (event) => { if (event.target.files.length) { setFiles(prev => [...prev, ...Array.from(event.target.files)]); } };
-  const handleRemoveFile = (fileName) => { setFiles(prev => prev.filter(file => file.name !== fileName)); };
-  const handleUpload = () => { if (files.length === 0) return alert("Please select files."); alert(`${files.length} file(s) ready for upload.`); onClose(); };
+  const [draft, setDraft] = useState(null);
+
+  // --- mutations
+  const { mutate: generateDraft, isPending: generating } = useGenerateDraft({
+    onSuccess: (data) => setDraft(data),
+  });
+  const { mutate: saveConfig, isPending: saving } = useSaveConfig();
+  const { mutate: lockConfig, isPending: locking } = useLockConfig();
+
+  // --- file handling
+  const handleFileChange = (event) => {
+    const selectedFiles = Array.from(event.target.files);
+    setFiles((prev) => [...prev, ...selectedFiles]);
+  };
+  const handleRemoveFile = (fileName) => {
+    setFiles((prev) => prev.filter((file) => file.name !== fileName));
+  };
+
+  // --- generate draft from first uploaded file
+  const handleGenerateDraft = () => {
+    if (files.length === 0) return alert("Please upload at least one file.");
+    const file = files[0];
+
+    if (file.type.includes("csv")) {
+      Papa.parse(file, {
+        header: true,
+        preview: 1,
+        complete: (results) => {
+          generateDraft(results.meta.fields);
+        },
+      });
+    } else if (
+      file.type.includes("spreadsheet") ||
+      file.type.includes("excel")
+    ) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const headers = XLSX.utils.sheet_to_json(sheet, { header: 1 })[0];
+        generateDraft(headers);
+      };
+      reader.readAsArrayBuffer(file);
+    }
+  };
+
+  // --- save & lock config in one go
+  const handleSaveAndLock = () => {
+    if (!draft || draft.length === 0) return;
+    saveConfig(draft, {
+      onSuccess: () => {
+        lockConfig({ instituteId, lock: true });
+        onClose();
+      },
+    });
+  };
+
+  const updateDraft = (index, field, value) => {
+    setDraft((prev) =>
+      prev.map((item, idx) =>
+        idx === index ? { ...item, [field]: value } : item
+      )
+    );
+  };
+
   return (
-    <Modal show={show} onClose={onClose} title="Upload Student Data">
-      <p className="text-sm text-gray-600 mb-4">Upload one or more CSV or Excel files containing student data.</p>
-      <div className="space-y-4">
-        <label className="flex justify-center w-full h-32 px-4 transition bg-white border-2 border-gray-300 border-dashed rounded-md appearance-none cursor-pointer hover:border-gray-400 focus:outline-none">
-          <span className="flex items-center space-x-2"><UploadCloud className="w-6 h-6 text-gray-600" /><span className="font-medium text-gray-600">Drop files, or <span className="text-emerald-600 underline">browse</span></span></span>
-          <input type="file" name="file_upload" className="hidden" multiple accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" onChange={handleFileChange} />
-        </label>
-        {files.length > 0 && (
-          <div className="border-t pt-4">
-            <h4 className="text-sm font-medium text-gray-800 mb-2">Selected Files:</h4>
-            <ul className="space-y-2 max-h-40 overflow-y-auto">{files.map((file, index) => (<li key={index} className="flex justify-between items-center text-sm p-2 bg-gray-100 rounded-md"><span className="text-gray-800 truncate pr-2">{file.name}</span><button onClick={() => handleRemoveFile(file.name)} className="text-red-500 hover:text-red-700"><X size={16} /></button></li>))}</ul>
+    <Modal
+      show={show}
+      onClose={onClose}
+      title={!draft ? "Upload Student Data" : "Configure & Lock Mapping"}
+      maxWidth={draft ? "max-w-6xl" : "max-w-md"}
+    >
+      {!draft ? (
+        <>
+          <p className="text-sm text-gray-600 mb-4">
+            Upload one or more CSV or Excel files containing student data.
+          </p>
+          <div className="space-y-4">
+            <label className="flex justify-center w-full h-32 px-4 transition bg-white border-2 border-gray-300 border-dashed rounded-md cursor-pointer hover:border-gray-400">
+              <span className="flex items-center space-x-2">
+                <UploadCloud className="w-6 h-6 text-gray-600" />
+                <span className="font-medium text-gray-600">
+                  Drop files, or{" "}
+                  <span className="text-emerald-600 underline">browse</span>
+                </span>
+              </span>
+              <input
+                type="file"
+                name="file_upload"
+                className="hidden"
+                multiple
+                accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+                onChange={handleFileChange}
+              />
+            </label>
+
+            {files.length > 0 && (
+              <div className="border-t pt-4">
+                <h4 className="text-sm font-medium text-gray-800 mb-2">
+                  Selected Files:
+                </h4>
+                <ul className="space-y-2 max-h-40 overflow-y-auto">
+                  {files.map((file, index) => (
+                    <li
+                      key={index}
+                      className="flex justify-between items-center text-sm p-2 bg-gray-100 rounded-md"
+                    >
+                      <span className="text-gray-800 truncate pr-2">
+                        {file.name}
+                      </span>
+                      <button
+                        onClick={() => handleRemoveFile(file.name)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <X size={16} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
-        )}
-      </div>
-      <div className="mt-6 flex justify-end">
-        <button onClick={handleUpload} className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:bg-emerald-300" disabled={files.length === 0}>Upload Files</button>
-      </div>
+
+          <div className="mt-6 flex justify-end">
+            <button
+              onClick={handleGenerateDraft}
+              className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:bg-emerald-300"
+              disabled={files.length === 0 || generating}
+            >
+              {generating ? "Generating..." : "Generate Draft"}
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="text-sm text-gray-600 mb-4">
+            Review the mapping below and adjust fields before locking the
+            configuration.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-h-[60vh] overflow-y-auto p-1">
+            {draft.map((col, idx) => (
+              <div
+                key={idx}
+                className="p-4 border rounded-lg bg-gray-50 space-y-3 flex flex-col"
+              >
+                <div>
+                  <label className="block text-xs font-medium text-gray-600">
+                    CSV Header
+                  </label>
+                  <p className="text-sm font-semibold text-gray-900 truncate">
+                    {col.csvHeader}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-600">
+                    Field Key
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    value={col.fieldKey || ""}
+                    onChange={(e) =>
+                      updateDraft(idx, "fieldKey", e.target.value)
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-600">
+                    Type
+                  </label>
+                  <select
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    value={col.type}
+                    onChange={(e) => updateDraft(idx, "type", e.target.value)}
+                  >
+                    <option value="string">string</option>
+                    <option value="number">number</option>
+                    <option value="boolean">boolean</option>
+                    <option value="date">date</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center space-x-2 mt-auto pt-2">
+                  <input
+                    type="checkbox"
+                    id={`required-${idx}`}
+                    checked={col.required}
+                    onChange={(e) =>
+                      updateDraft(idx, "required", e.target.checked)
+                    }
+                    className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <label htmlFor={`required-${idx}`} className="text-sm text-gray-700">Required</label>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-6 flex justify-end">
+            <button
+              onClick={handleSaveAndLock}
+              className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:bg-emerald-300"
+              disabled={saving || locking}
+            >
+              {saving || locking ? "Saving..." : "Save & Lock Config"}
+            </button>
+          </div>
+        </>
+      )}
     </Modal>
   );
 };
