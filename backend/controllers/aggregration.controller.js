@@ -3,12 +3,29 @@ import { Admin, SuperAdmin, User } from "../models/user.model.js";
 export const superAdminAggreg = async (req, res) => {
   const { user: currUser } = req;
   try {
-    const aggregations = await SuperAdmin.findById(currUser.userId).select(
+    const superAdminDoc = await SuperAdmin.findById(currUser.userId).select(
       "aggregations"
     );
 
-    if (!aggregations)
+    if (!superAdminDoc || !superAdminDoc.aggregations) {
       return res.status(404).json({ success: false, error: "no aggreg found" });
+    }
+
+    const aggregations =
+      superAdminDoc.aggregations.toObject?.() || superAdminDoc.aggregations;
+
+    const risk = aggregations.risk || { high: 0, medium: 0, low: 0 };
+    const institute = aggregations.institute || { active: 0, inactive: 0 };
+
+    aggregations.risk = {
+      ...risk,
+      total: (risk.high || 0) + (risk.medium || 0) + (risk.low || 0),
+    };
+
+    aggregations.institute = {
+      ...institute,
+      total: (institute.active || 0) + (institute.inactive || 0),
+    };
 
     return res.status(200).json({
       success: true,

@@ -10,16 +10,15 @@ import SuperAdminDashboard from "./pages/dashboard/SuperAdminDashboard.jsx";
 function App() {
 
   const { data:authUser, isPending} = useAuthUser();
-
+  
   if (isPending) {
     return <LoadingSpinner />
   }
-
   return (
     <>
       <Routes>
         <Route path="/login" element={authUser ? <Navigate to={'/'}/> : <LoginPage />}/>
-        <Route path="/" element={authUser ? (authUser?.role== 'admin' ? <AdminDashboard /> : authUser?.role == 'superAdmin' ? <SuperAdminDashboard /> : < MentorDashboard/>) : < Navigate to={'/login'}/>}/>
+        <Route path="/" element={authUser ? (authUser?.role== 'admin' ? <AdminDashboard authUser={authUser} /> : authUser?.role == 'superAdmin' ? <SuperAdminDashboard authUser={authUser} /> : < MentorDashboard/>) : < Navigate to={'/login'}/>}/>
       </Routes>
       <ToastContainer
             position="top-center"

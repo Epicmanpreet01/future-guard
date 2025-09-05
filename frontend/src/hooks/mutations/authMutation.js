@@ -27,7 +27,6 @@ export const useLoginMutation = () => {
   });
 };
 
-
 export const useLogoutMutation = () => {
   const queryClient = useQueryClient();
 
@@ -41,8 +40,9 @@ export const useLogoutMutation = () => {
         }
         return res.data;
       } catch (error) {
-
-        throw new Error(error.response?.data?.message || "An error occurred during logout.");
+        throw new Error(
+          error.response?.data?.message || "An error occurred during logout."
+        );
       }
     },
     onSuccess: () => {
