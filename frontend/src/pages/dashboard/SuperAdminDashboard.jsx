@@ -72,9 +72,9 @@ export default function SuperAdminDashboard({ authUser }) {
   const globalInstituteStats = aggregations?.institute;
 
   const riskDistribution = [
-    { risk: "High", count: globalRiskStats.high, color: "bg-red-500" },
-    { risk: "Medium", count: globalRiskStats.medium, color: "bg-yellow-500" },
-    { risk: "Low", count: globalRiskStats.low, color: "bg-green-500" },
+    { risk: "High", count: globalRiskStats?.high, color: "bg-red-500" },
+    { risk: "Medium", count: globalRiskStats?.medium, color: "bg-yellow-500" },
+    { risk: "Low", count: globalRiskStats?.low, color: "bg-green-500" },
   ];
 
   const topInstitutesByStudents = [...institutes]

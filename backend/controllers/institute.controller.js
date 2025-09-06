@@ -136,23 +136,26 @@ export const getCurrInstitute = async (req, res) => {
   }
 };
 
-const normalize = (str) => str.toLowerCase().replace(/[^a-z0-9]/g, "");
+const normalize = (str) => (str || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 
 export const generateDraftConfig = async (req, res) => {
   try {
     const { headers } = req.body;
     const institute = await Institute.findById(req.user.instituteId);
-    if (institute.config.locked)
+
+    if (institute.config.locked) {
       return res.status(400).json({
         success: false,
         error:
-          "configuration is already locked, please contact the owner if you think it is wrong",
+          "Configuration is already locked. Please contact an administrator if you believe this is an error.",
       });
+    }
 
     if (!headers || !Array.isArray(headers)) {
-      return res
-        .status(400)
-        .json({ success: false, error: "Headers array required" });
+      return res.status(400).json({
+        success: false,
+        error: "A 'headers' array is required in the request body.",
+      });
     }
 
     const metadata = await Metadata.find({});
@@ -165,18 +168,19 @@ export const generateDraftConfig = async (req, res) => {
       })),
     ]);
 
-    const draft = headers.map((header) => {
+    const initialDraft = headers.filter(Boolean).map((header) => {
       const normHeader = normalize(header);
 
-      const best = candidates
-        .map((c) => {
-          const target = normalize(c.synonym || c.fieldKey);
+      const bestMatch = candidates
+        .map((candidate) => {
+          const target = normalize(candidate.synonym || candidate.fieldKey);
           const rating = stringSimilarity.compareTwoStrings(normHeader, target);
-          return { ...c, rating };
+          return { ...candidate, rating };
         })
         .sort((a, b) => b.rating - a.rating)[0];
 
-      const fieldMeta = best && best.rating > 0.5 ? best.meta : null;
+      const fieldMeta =
+        bestMatch && bestMatch.rating > 0.5 ? bestMatch.meta : null;
 
       return {
         csvHeader: header,
@@ -187,14 +191,30 @@ export const generateDraftConfig = async (req, res) => {
       };
     });
 
+    const seenFieldKeys = new Set();
+    const finalDraft = initialDraft.filter((item) => {
+      if (!item.fieldKey) {
+        return true;
+      }
+
+      if (seenFieldKeys.has(item.fieldKey)) {
+        return false;
+      }
+
+      seenFieldKeys.add(item.fieldKey);
+      return true;
+    });
+
     res.status(200).json({
       success: true,
-      message: "draft created successfully",
-      data: draft,
+      message: "Draft configuration created successfully.",
+      data: finalDraft,
     });
   } catch (err) {
     console.error("Error generating draft config:", err);
-    res.status(500).json({ success: false, error: "Server error" });
+    res
+      .status(500)
+      .json({ success: false, error: "An internal server error occurred." });
   }
 };
 
@@ -208,6 +228,8 @@ export const updateConfig = async (req, res) => {
         .status(403)
         .json({ success: false, error: "Only admins can update config" });
     }
+
+    columns = columns.filter((column) => column.fieldKey);
 
     const institute = await Institute.findById(user.instituteId);
     if (!institute) {

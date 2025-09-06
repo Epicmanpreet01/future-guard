@@ -19,7 +19,6 @@ export const useInstitutesQuery = () => {
         return [];
       }
     },
-    retry: false,
   });
 };
 
@@ -42,6 +41,5 @@ export const useInstituteQuery = (instituteId, role) => {
         return null;
       }
     },
-    retry: false,
   });
 };

@@ -16,7 +16,6 @@ export const useAdminsQuery = () => {
         return [];
       }
     },
-    retry: false,
   });
 };
 
@@ -35,6 +34,5 @@ export const useAdminQuery = (adminId) => {
         return {};
       }
     },
-    retry: false,
   });
 };

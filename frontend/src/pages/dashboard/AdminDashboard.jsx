@@ -168,7 +168,7 @@ const MentorAnalytics = ({ mentors, aggregations }) => {
   const topDepartments = Object.entries(departmentCounts).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count).slice(0, 6);
   const maxTopDepartmentCount = topDepartments.length > 0 ? topDepartments[0].count : 1;
   const activeInactiveData = { active: aggregations?.mentor?.active, inactive: aggregations?.mentor?.inactive };
-  const totalMentorsForPercentage = aggregations.mentor.total;
+  const totalMentorsForPercentage = aggregations?.mentor?.total;
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -277,8 +277,8 @@ const AdminSidebar = ({ onShowConfig, onShowDepartments, aggregations, mentors }
 		.sort((a, b) => b.score - a.score)
 		.slice(0, 6);
 
-  const analyticsData = { riskDistribution: [{ risk: "High Risk", count: aggregations.risk.high, color: "bg-red-200" }, { risk: "Medium Risk", count: aggregations.risk.medium, color: "bg-yellow-300" }, { risk: "Low Risk", count: aggregations.risk.low, color: "bg-green-200" }], departmentPerformance: topDepartments };
-  const totalRiskStudents = aggregations.risk.total || 1;
+  const analyticsData = { riskDistribution: [{ risk: "High Risk", count: aggregations?.risk?.high, color: "bg-red-200" }, { risk: "Medium Risk", count: aggregations?.risk?.medium, color: "bg-yellow-300" }, { risk: "Low Risk", count: aggregations?.risk?.low, color: "bg-green-200" }], departmentPerformance: topDepartments };
+  const totalRiskStudents = aggregations?.risk?.total || 1;
   return (
     <aside className="space-y-6">
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -540,7 +540,6 @@ const ConfigModal = ({ show, onClose, instituteId, role }) => {
   const [files, setFiles] = useState([]);
   const [draft, setDraft] = useState(null);
 
-  // --- Data Fetching & Mutations ---
   const { data: metadata, isLoading: metadataLoading, isError: metadataError } = useMetaData();
   const { mutate: generateDraft, isPending: generating } = useGenerateDraft({
     onSuccess: (data) => setDraft(data),
@@ -556,7 +555,7 @@ const ConfigModal = ({ show, onClose, instituteId, role }) => {
       setDraft(institute?.config?.draft || null);
     }
   }, [institute]);
-  // --- Event Handlers ---
+
   const handleFileChange = (event) => {
     const selectedFiles = Array.from(event.target.files);
     setFiles((prev) => [...prev, ...selectedFiles]);
@@ -566,43 +565,69 @@ const ConfigModal = ({ show, onClose, instituteId, role }) => {
     setFiles((prev) => prev.filter((file) => file.name !== fileName));
   };
 
-  const handleGenerateDraft = () => {
-    if (files.length === 0) return toast.error("Please upload at least one file");
-    const file = files[0];
-    console.log(file, files)
-    const onComplete = (results) => {
-        if(results.meta.fields) {
-            generateDraft(results.meta.fields);
-        } else {
-            console.error("Could not find headers in the file.");
-            toast.error("Error: Could not parse headers from the uploaded file.");
-        }
-    };
-
-    if (file.type.includes("csv") || file.name.endsWith('.csv')) {
-      Papa.parse(file, { header: true, preview: 1, complete: onComplete });
-    } else if (
-      file.type.includes("spreadsheet") ||
-      file.type.includes("excel") ||
-      file.name.endsWith('.xlsx') ||
-      file.name.endsWith('.xls')
-    ) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
+  const parseFileHeaders = (file) => {
+    return new Promise((resolve, reject) => {
+      if (file.type.includes("csv") || file.name.endsWith('.csv')) {
+        Papa.parse(file, {
+          header: true,
+          preview: 1,
+          complete: (results) => {
+            if (results.meta.fields) {
+              resolve(results.meta.fields);
+            } else {
+              reject(`Could not find headers in CSV file: ${file.name}`);
+            }
+          },
+          error: (err) => reject(`Error parsing CSV file ${file.name}: ${err.message}`),
+        });
+      } else if (
+        file.type.includes("spreadsheet") ||
+        file.type.includes("excel") ||
+        file.name.endsWith('.xlsx') ||
+        file.name.endsWith('.xls')
+      ) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: "array" });
             const sheet = workbook.Sheets[workbook.SheetNames[0]];
             const headers = XLSX.utils.sheet_to_json(sheet, { header: 1 })[0];
-            generateDraft(headers);
-        } catch (error) {
-            console.error("Error parsing Excel file:", error);
-            toast.error("An error occurred while parsing the Excel file.");
-        }
-      };
-      reader.readAsArrayBuffer(file);
-    } else {
-        toast.error("Unsupported file type. Please upload a CSV or Excel file.");
+            if (headers && headers.length > 0) {
+              resolve(headers);
+            } else {
+              reject(`Could not find headers in Excel file: ${file.name}`);
+            }
+          } catch (error) {
+            reject(`Error parsing Excel file ${file.name}: ${error.message}`);
+          }
+        };
+        reader.onerror = () => reject(`Error reading file: ${file.name}`);
+        reader.readAsArrayBuffer(file);
+      } else {
+        reject(`Unsupported file type: ${file.name}. Please upload a CSV or Excel file.`);
+      }
+    });
+  };
+
+  const handleGenerateDraft = async () => {
+    if (files.length === 0) return toast.error("Please upload at least one file");
+    const parsingPromises = files.map(parseFileHeaders);
+
+    try {
+      const allHeadersArrays = await Promise.all(parsingPromises);
+      const combinedHeaders = allHeadersArrays.flat();
+      const uniqueHeaders = [...new Set(combinedHeaders)].filter(Boolean);
+
+      if (uniqueHeaders.length > 0) {
+        generateDraft(uniqueHeaders);
+      } else {
+        console.error("Could not find any valid headers in the uploaded files.");
+        toast.error("Error: Could not parse any headers from the uploaded files.");
+      }
+    } catch (error) {
+      console.error("Error processing files:", error);
+      toast.error(typeof error === 'string' ? error : "An error occurred during file processing.");
     }
   };
   
@@ -611,7 +636,7 @@ const ConfigModal = ({ show, onClose, instituteId, role }) => {
     saveConfig(draft, {
       onSuccess: () => {
         lockConfig({ instituteId, lock: true }, {
-            onSuccess: () => onClose()
+          onSuccess: () => onClose()
         });
       },
     });
@@ -641,7 +666,7 @@ const ConfigModal = ({ show, onClose, instituteId, role }) => {
     if (metadataLoading) {
       return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {(draft || [1,2,3,4]).map((_, idx) => <CardSkeleton key={idx} />)}
+          {(draft || [1,2,3,4]).map((_, idx) => <CardSkeleton key={idx} />)}
         </div>
       );
     }
@@ -649,18 +674,18 @@ const ConfigModal = ({ show, onClose, instituteId, role }) => {
     if (metadataError) {
       return (
         <div className="text-center p-8 bg-red-50 border border-red-200 rounded-lg">
-            <h3 className="text-lg font-semibold text-red-800">Failed to Load Mapping Schema</h3>
-            <p className="text-red-600 mt-2">Could not fetch the required metadata. Please try again later.</p>
+          <h3 className="text-lg font-semibold text-red-800">Failed to Load Mapping Schema</h3>
+          <p className="text-red-600 mt-2">Could not fetch the required metadata. Please try again later.</p>
         </div>
       );
     }
     return (
-       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-h-[65vh] overflow-y-auto py-2 pr-4 -mr-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-h-[65vh] overflow-y-auto py-2 pr-4 -mr-4">
         {draft?.map((col, idx) => (
           <div key={idx} className="bg-white border border-slate-300 rounded-lg shadow-md flex flex-col overflow-hidden">
             <div className="px-5 py-4 bg-emerald-600 border-b border-emerald-600">
-              <label className="block text-sm font-medium text-white-500 mb-1">Original Header</label>
-              <p className="text-lg font-semibold text-gray-300 truncate" title={col.csvHeader}>{col.csvHeader}</p>
+              <label className="block text-sm font-medium text-white mb-1">Original Header</label>
+              <p className="text-lg font-semibold text-gray-100 truncate" title={col.csvHeader}>{col.csvHeader}</p>
             </div>
 
             <div className="p-5 space-y-5 flex-grow bg-white">
@@ -680,13 +705,12 @@ const ConfigModal = ({ show, onClose, instituteId, role }) => {
                   <option value="">--- Do Not Map ---</option>
                 </select>
               </div>
-
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Type</label>
                 <input
                   type="text"
                   className="w-full rounded-md border-slate-300 shadow-sm text-base py-2 px-3 bg-slate-200 text-slate-600 cursor-not-allowed"
-                  value={col.type.charAt(0).toUpperCase() + col.type.slice(1)} // Capitalized
+                  value={col.type.charAt(0).toUpperCase() + col.type.slice(1)}
                   readOnly
                   disabled
                 />
@@ -695,7 +719,7 @@ const ConfigModal = ({ show, onClose, instituteId, role }) => {
 
             <div className="px-5 py-4 mt-auto bg-slate-50 border-t border-slate-200">
               <div className="flex items-center">
-                 <input
+                  <input
                   type="checkbox"
                   id={`required-${idx}`}
                   checked={col.required}
@@ -715,7 +739,7 @@ const ConfigModal = ({ show, onClose, instituteId, role }) => {
   const renderUploadContent = () => (
     <>
       <p className="text-sm text-gray-600 mb-4">
-        Upload a CSV or Excel file containing student data.
+        Upload one or more CSV or Excel files containing student data. The headers will be combined.
       </p>
       <div className="space-y-4">
         <label className="flex justify-center w-full h-32 px-4 transition bg-white border-2 border-gray-300 border-dashed rounded-md cursor-pointer hover:border-gray-400">
@@ -730,14 +754,14 @@ const ConfigModal = ({ show, onClose, instituteId, role }) => {
             type="file"
             name="file_upload"
             className="hidden"
-            multiple={false}
+            multiple={true}
             accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
             onChange={handleFileChange}
           />
         </label>
         {files.length > 0 && (
           <div className="border-t pt-4">
-            <h4 className="text-sm font-medium text-gray-800 mb-2">Selected File:</h4>
+            <h4 className="text-sm font-medium text-gray-800 mb-2">Selected Files:</h4>
             <ul className="space-y-2 max-h-40 overflow-y-auto">
               {files.map((file, index) => (
                 <li key={index} className="flex justify-between items-center text-sm p-2 bg-gray-100 rounded-md">
@@ -785,7 +809,7 @@ const ConfigModal = ({ show, onClose, instituteId, role }) => {
               <p className="text-base text-slate-600 mb-5">
                 {institute?.config?.locked
                   ? "Configuration is locked. You can view the mapping below."
-                  : "Map each header from your file to a predefined system field..."}
+                  : "Map each header from your file(s) to a predefined system field."}
               </p>
               {renderDraftContent()}
               {!institute?.config?.locked && (
