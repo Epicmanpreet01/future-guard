@@ -40,12 +40,12 @@ import { getReadableId, getSuccessRate, getTotalStudents, exportInstituteTableCS
 import { useAddMentorMutation, useRemoveMentorMutation, useUpdateMentorMutation } from "../../hooks/mutations/mentorMutation.js";
 import { useGenerateDraft, useSaveConfig, useLockConfig } from "../../hooks/mutations/configMutation.js";
 import useMetaData from "../../hooks/queries/useMetadata.js";
+import { useInstituteQuery } from "../../hooks/queries/useInstitute.js";
 
 const allInstituteDepartments = [
   'Accountancy & Business Statistics (ABST)', 'Aerospace Engineering', 'Agricultural Economics', 'Agricultural Sciences', 'Agronomy', 'AI & Data Science', 'Anatomy', 'Animal Husbandry', 'Architecture & Planning', 'Arts', 'Bachelor in Arts (B.A.)', 'Bachelor in Commerce (B.Com.)', 'Bachelor in Computer Applications (B.C.A.)', 'Bachelor in Physical Education (B.P.Ed.)', 'Bachelor in Science (B.Sc.) Computer Science', 'Bachelor in Science (B.Sc.) Hons.', 'Bachelor in Science (B.Sc.) Medical & Non-Medical', 'Bachelors in Arts (B.A.)', 'Banking & Insurance', 'Biochemistry', 'Bio-Informatics', 'Biotechnology', 'Biotechnology / Bioengineering', 'Botany', 'Business Administration', 'Business Administration (BBA / MBA)', 'Carrier Oriented Courses', 'Chemical Engineering', 'Chemistry', 'Civil & Family Law', 'Civil Engineering (CE)', 'Commerce (B.Com, M.Com)', 'Community Medicine', 'Computer Science & Applications', 'Computer Science & Engineering (CSE)', 'Constitutional Law', 'Corporate Law', 'Criminal Law', 'Dairy Science', 'Dentistry', 'Dermatology', 'Design (Fashion, Industrial, Graphic, etc.)', 'Economic Administration and Financial Management (EAFM)', 'Economics', 'Education (B.Ed, M.Ed)', 'Electrical Engineering (EE)', 'Electronics & Communication Engineering (ECE)', 'Engineering', 'English / Literature', 'Entomology', 'Environmental Auditing', 'Environmental Science', 'Environmental Studies', 'Film & Media Studies', 'Finance & Accounting', 'Fine Arts', 'Food Technology', 'Forensic Medicine', 'Forestry', 'Geography', 'Geology', 'Gynecology & Obstetrics', 'Hindi', 'History', 'Horticulture', 'Human Rights', 'Information Technology (IT)', 'Journalism & Mass Communication', 'Labour Law', 'Languages (Hindi, Sanskrit, Foreign Languages etc.)', 'Law (LLB, LLM)', 'Library & Information Science', 'M.A.I English', 'M.Sc.I Zoology', 'Management Studies', 'Marketing', 'Master in Arts (M.A.) English & History', 'Master in Arts (M.A.) Music Instrumental, Music Vocal, Economics, Public Administration and Dance', 'Master in Commerce (M.Com.) Semester System', 'Master in Science (M.Sc.) Information Technology', 'Mathematics', 'Mechanical Engineering (ME)', 'Medicine', 'Medicine (MBBS)', 'Metallurgical & Materials Engineering', 'Microbiology', 'Mining Engineering', 'Music, Theatre & Dance', 'Nursing', 'Orthopedics', 'Pathology', 'Pediatrics', 'Performing Arts (Music, Dance, Theatre)', 'Petroleum Engineering', 'Pharmacology', 'Pharmacy', 'Philosophy', 'Physical Education & Sports', 'Physics', 'Physiology', 'Physiotherapy', 'Plant Breeding & Genetics', 'Plant Pathology', 'Political Science', 'Post Graduate Diploma in Dress Designing', 'Post Graduate Diploma in Mass Communication', 'Postgraduate Diploma in Translation (English to Hindi)', 'Psychiatry', 'Psychology', 'Public Administration', 'Public Health', 'Sanskrit', 'Social Work', 'Sociology', 'Soil Science', 'Statistics', 'Surgery', 'Tourism & Travel Management', 'Tribal Studies', 'Urdu / Persian', 'Veterinary Anatomy', 'Veterinary Medicine', 'Zoology'
 ];
 
-// --- ADMIN DASHBOARD PAGE ---
 export default function AdminDashboard({ authUser }) {
   const [showAddMentorModal, setShowAddMentorModal] = useState(false);
   const [showEditMentorModal, setShowEditMentorModal] = useState(false);
@@ -153,13 +153,11 @@ export default function AdminDashboard({ authUser }) {
 
       <AddMentorModal show={showAddMentorModal} onClose={() => setShowAddMentorModal(false)} onAdd={handleAddMentor} />
       {selectedMentor && <EditMentorModal show={showEditMentorModal} onClose={() => { setShowEditMentorModal(false); setSelectedMentor(null); }} mentor={selectedMentor} setMentor={setSelectedMentor} onUpdate={handleUpdateMentor} />}
-      <ConfigModal show={showConfigModal} onClose={() => setShowConfigModal(false)} />
+      <ConfigModal show={showConfigModal} onClose={() => setShowConfigModal(false)} instituteId={authUser.instituteId._id} role={authUser.role} />
       <DepartmentsModal show={showDepartmentsModal} onClose={() => setShowDepartmentsModal(false)} mentors={mentors} />
     </div>
   );
 }
-
-// --- ADMIN-SPECIFIC COMPONENTS ---
 
 const MentorAnalytics = ({ mentors, aggregations }) => {
   const departmentCounts = mentors.reduce((acc, mentor) => {
@@ -538,7 +536,7 @@ const EditMentorModal = ({ show, onClose, mentor, setMentor, onUpdate }) => {
   );
 };
 
-const ConfigModal = ({ show, onClose, instituteId }) => {
+const ConfigModal = ({ show, onClose, instituteId, role }) => {
   const [files, setFiles] = useState([]);
   const [draft, setDraft] = useState(null);
 
@@ -549,7 +547,15 @@ const ConfigModal = ({ show, onClose, instituteId }) => {
   });
   const { mutate: saveConfig, isPending: saving } = useSaveConfig();
   const { mutate: lockConfig, isPending: locking } = useLockConfig();
+  const { data: institute = null, isPending: institutePending } = useInstituteQuery(instituteId, role);
 
+  useEffect(() => {
+    if (institute?.config?.columns?.length) {
+      setDraft(institute.config.columns);
+    } else {
+      setDraft(institute?.config?.draft || null);
+    }
+  }, [institute]);
   // --- Event Handlers ---
   const handleFileChange = (event) => {
     const selectedFiles = Array.from(event.target.files);
@@ -561,15 +567,15 @@ const ConfigModal = ({ show, onClose, instituteId }) => {
   };
 
   const handleGenerateDraft = () => {
-    if (files.length === 0) return alert("Please upload at least one file.");
+    if (files.length === 0) return toast.error("Please upload at least one file");
     const file = files[0];
-
+    console.log(file, files)
     const onComplete = (results) => {
         if(results.meta.fields) {
             generateDraft(results.meta.fields);
         } else {
             console.error("Could not find headers in the file.");
-            alert("Error: Could not parse headers from the uploaded file.");
+            toast.error("Error: Could not parse headers from the uploaded file.");
         }
     };
 
@@ -591,12 +597,12 @@ const ConfigModal = ({ show, onClose, instituteId }) => {
             generateDraft(headers);
         } catch (error) {
             console.error("Error parsing Excel file:", error);
-            alert("An error occurred while parsing the Excel file.");
+            toast.error("An error occurred while parsing the Excel file.");
         }
       };
       reader.readAsArrayBuffer(file);
     } else {
-        alert("Unsupported file type. Please upload a CSV or Excel file.");
+        toast.error("Unsupported file type. Please upload a CSV or Excel file.");
     }
   };
   
@@ -648,10 +654,9 @@ const ConfigModal = ({ show, onClose, instituteId }) => {
         </div>
       );
     }
-
     return (
        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-h-[65vh] overflow-y-auto py-2 pr-4 -mr-4">
-        {draft.map((col, idx) => (
+        {draft?.map((col, idx) => (
           <div key={idx} className="bg-white border border-slate-300 rounded-lg shadow-md flex flex-col overflow-hidden">
             <div className="px-5 py-4 bg-emerald-600 border-b border-emerald-600">
               <label className="block text-sm font-medium text-white-500 mb-1">Original Header</label>
@@ -666,6 +671,7 @@ const ConfigModal = ({ show, onClose, instituteId }) => {
                   className="w-full rounded-md border-slate-300 shadow-sm text-gray-900 placeholder-gray-400 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 text-base py-2 px-3"
                   value={col.fieldKey || ""}
                   onChange={(e) => handleMappingChange(idx, e.target.value)}
+                  disabled={institute?.config?.locked}
                 >
                   <option value="" disabled>Select a field...</option>
                   {metadata?.map(meta => (
@@ -758,30 +764,51 @@ const ConfigModal = ({ show, onClose, instituteId }) => {
   );
 
   return (
-    <Modal
-      show={show}
-      onClose={onClose}
-      title={!draft ? "Upload Student Data" : "Configure & Lock Mapping"}
-      maxWidth={draft ? "max-w-7xl" : "max-w-md"} // Increased width slightly for more spacing
-    >
-      {!draft ? renderUploadContent() : (
-        <>
-          <p className="text-base text-slate-600 mb-5">
-            Map each header from your file to a predefined system field. The field's type and requirement status will be set automatically.
-          </p>
-          {renderDraftContent()}
-          <div className="mt-6 flex justify-end border-t border-slate-200 pt-5">
-            <button
-              onClick={handleSaveAndLock}
-              className="px-6 py-3 text-base font-semibold text-white bg-emerald-600 rounded-lg shadow-sm hover:bg-emerald-700 disabled:bg-emerald-400 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
-              disabled={saving || locking || metadataLoading || metadataError}
-            >
-              {saving || locking ? "Saving..." : "Save & Lock Configuration"}
-            </button>
-          </div>
-        </>
+    <>
+      { !institutePending && (
+        <Modal
+          show={show}
+          onClose={onClose}
+          title={
+            institute?.config?.columns?.length
+              ? "View Configuration"
+              : draft
+              ? "Configure & Lock Mapping"
+              : "Upload Student Data"
+          }
+          maxWidth={
+            institute?.config?.columns?.length || draft ? "max-w-7xl" : "max-w-md"
+          }
+        >
+          {institute?.config?.columns?.length || draft ? (
+            <>
+              <p className="text-base text-slate-600 mb-5">
+                {institute?.config?.locked
+                  ? "Configuration is locked. You can view the mapping below."
+                  : "Map each header from your file to a predefined system field..."}
+              </p>
+              {renderDraftContent()}
+              {!institute?.config?.locked && (
+                <div className="mt-6 flex justify-end border-t border-slate-200 pt-5">
+                  <button
+                    onClick={handleSaveAndLock}
+                    className="px-6 py-3 text-base font-semibold text-white bg-emerald-600 rounded-lg shadow-sm hover:bg-emerald-700 disabled:bg-emerald-400 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
+                    disabled={saving || locking || metadataLoading || metadataError}
+                  >
+                    {saving || locking ? "Saving..." : "Save & Lock Configuration"}
+                  </button>
+                </div>
+              )}
+            </>
+          ) : (
+            renderUploadContent()
+          )}
+        </Modal>
       )}
-    </Modal>
+      { institutePending && (
+        <LoadingSpinner />
+      ) }
+    </>
   );
 };
 

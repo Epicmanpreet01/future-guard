@@ -22,7 +22,7 @@ import { useNavigate } from "react-router-dom";
 import LoadingSpinner from "../../components/utils/LoadingSpinner.jsx";
 
 import { useLogoutMutation } from "../../hooks/mutations/authMutation.js";
-import useInstituteQuery from "../../hooks/queries/useInstitute.js";
+import { useInstitutesQuery } from "../../hooks/queries/useInstitute.js";
 import useAggregationsQuery from "../../hooks/queries/useAggregations.js";
 import { useAddinstituteMutation, useRemoveInstituteMutation } from "../../hooks/mutations/instituteMutation.js";
 import { useUpdateStatusMutation } from "../../hooks/mutations/adminMutation.js";
@@ -38,7 +38,7 @@ export default function SuperAdminDashboard({ authUser }) {
 
   // Queries and mutations
   const { mutate: logoutMutate, isPending: logoutPending } = useLogoutMutation();
-  const { data: institutes = [], isPending: institutePending, isError: instituteError } = useInstituteQuery();
+  const { data: institutes = [], isPending: institutePending, isError: instituteError } = useInstitutesQuery();
   const { data: aggregations = { risk: { high: 0, medium: 0, low: 0 }, success: 0, institute: { active: 0, inactive: 0 } }, isPending: aggregationsPending, isError: aggregationsError } = useAggregationsQuery({ role: authUser.role.toLowerCase() });
   const { mutate: addInstituteMutation, isPending: addInstitutePending } = useAddinstituteMutation();
   const { mutate: removeInstituteMutation, isPending: removeInstitutePending } = useRemoveInstituteMutation();
