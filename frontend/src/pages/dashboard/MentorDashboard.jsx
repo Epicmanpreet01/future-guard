@@ -144,7 +144,7 @@ export default function MentorDashboard() {
         </section>
 
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200">
+          <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col">
             <div className="px-6 py-4 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900">Student Management</h2>
               <div className="mt-4 space-y-3">
@@ -152,7 +152,7 @@ export default function MentorDashboard() {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <input type="text" placeholder="Search by name, ID, or department..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition text-gray-900 placeholder-gray-500" />
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2">
                    <FilterDropdown label="Risk Level" value={filters.risk} onChange={(e) => handleFilterChange('risk', e.target.value)} options={['All', 'Low', 'Medium', 'High']} />
                    <FilterDropdown label="Attendance" value={filters.attendance} onChange={(e) => handleFilterChange('attendance', e.target.value)} options={['All', 'Above 75%', 'Below 75%']} />
                    <FilterDropdown label="Fee Status" value={filters.fees} onChange={(e) => handleFilterChange('fees', e.target.value)} options={['All', 'Paid', 'Pending']} />
@@ -160,7 +160,7 @@ export default function MentorDashboard() {
                 </div>
               </div>
             </div>
-            <div className="max-h-[600px] overflow-y-auto">
+            <div className="flex-grow overflow-y-auto">
               <StudentTable students={filteredStudents} activeActionMenu={activeActionMenu} setActiveActionMenu={setActiveActionMenu} onViewProfile={setViewingStudent} />
             </div>
           </div>
@@ -227,11 +227,14 @@ const StatCard = ({ icon: Icon, title, value, color }) => (
 );
 
 const FilterDropdown = ({ label, value, onChange, options }) => (
-  <div className="relative">
-    <select value={value} onChange={onChange} className="appearance-none w-full bg-gray-50 border border-gray-300 text-gray-900 py-2 pl-3 pr-8 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500">
-      {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-    </select>
-    <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+  <div>
+    <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+    <div className="relative">
+      <select value={value} onChange={onChange} className="appearance-none w-full bg-gray-50 border border-gray-300 text-gray-900 py-2 pl-3 pr-8 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500">
+        {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+      </select>
+      <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+    </div>
   </div>
 );
 
@@ -359,4 +362,6 @@ const InfoItem = ({ label, value }) => (
         <p className="text-sm font-medium text-gray-800">{value}</p>
     </div>
 );
+
+
 
