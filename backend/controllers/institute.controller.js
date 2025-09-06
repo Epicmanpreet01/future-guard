@@ -205,10 +205,23 @@ export const generateDraftConfig = async (req, res) => {
       return true;
     });
 
+    const requiredMetadataFields = metadata.filter((m) => m.required);
+    const mappedFieldKeys = new Set(
+      finalDraft.map((item) => item.fieldKey).filter(Boolean)
+    );
+
+    const missingRequiredFields = requiredMetadataFields
+      .filter((meta) => !mappedFieldKeys.has(meta.fieldKey))
+      .map((meta) => ({
+        fieldKey: meta.fieldKey,
+        displayName: meta.displayName,
+      }));
+
     res.status(200).json({
       success: true,
       message: "Draft configuration created successfully.",
       data: finalDraft,
+      missingFields: missingRequiredFields,
     });
   } catch (err) {
     console.error("Error generating draft config:", err);
@@ -230,6 +243,22 @@ export const updateConfig = async (req, res) => {
     }
 
     columns = columns.filter((column) => column.fieldKey);
+
+    const requiredMetadata = await Metadata.find({ required: true });
+    const providedFieldKeys = new Set(columns.map((c) => c.fieldKey));
+
+    const missingFields = requiredMetadata
+      .filter((meta) => !providedFieldKeys.has(meta.fieldKey))
+      .map((meta) => meta.displayName);
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: `Cannot save configuration. The following required fields are missing: ${missingFields.join(
+          ", "
+        )}.`,
+      });
+    }
 
     const institute = await Institute.findById(user.instituteId);
     if (!institute) {
@@ -272,10 +301,30 @@ export const lockConfig = async (req, res) => {
         .status(404)
         .json({ success: false, error: "Institute not found" });
 
-    if (!institute.config || !institute.config.columns.length) {
-      return res
-        .status(400)
-        .json({ success: false, error: "No config set yet" });
+    if (lock === true) {
+      const currentConfig = institute.config?.columns || [];
+      if (currentConfig.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: "Cannot lock an empty configuration.",
+        });
+      }
+
+      const requiredMetadata = await Metadata.find({ required: true });
+      const mappedFieldKeys = new Set(currentConfig.map((c) => c.fieldKey));
+
+      const missingFields = requiredMetadata
+        .filter((meta) => !mappedFieldKeys.has(meta.fieldKey))
+        .map((meta) => meta.displayName);
+
+      if (missingFields.length > 0) {
+        return res.status(400).json({
+          success: false,
+          error: `Cannot lock configuration. The following required fields are missing or unmapped: ${missingFields.join(
+            ", "
+          )}.`,
+        });
+      }
     }
 
     if (lock === false && user.role !== "superAdmin") {
@@ -290,7 +339,9 @@ export const lockConfig = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: lock ? "Config locked" : "Config unlocked by superAdmin",
+      message: lock
+        ? "Config locked successfully"
+        : "Config unlocked by superAdmin",
       locked: institute.config.locked,
     });
   } catch (err) {

@@ -3,29 +3,39 @@ import axios from "axios";
 import { toast } from "react-toastify";
 
 export const useGenerateDraft = (options = {}) => {
+  const {
+    onSuccess: componentOnSuccess,
+    onError: componentOnError,
+    ...restOptions
+  } = options;
+
   return useMutation({
+    ...restOptions,
     mutationFn: async (headers) => {
       try {
         const res = await axios.post("/api/institute/config/draft", {
           headers,
         });
-        const data = res?.data;
         if (res?.status !== 200)
-          throw new Error(data?.error || "Failed to generate draft");
-        console.log(data?.data);
-        return data?.data;
+          throw new Error(res?.data?.error || "Failed to generate draft");
+        return res.data;
       } catch (error) {
-        console.error(`Error occured while generating draft: ${error}`);
-        throw error;
+        console.error(`Error occurred while generating draft: ${error}`);
+        throw error.response?.data || new Error("An unknown error occurred");
       }
     },
-    onSuccess: () => {
+    onSuccess: (data, variables, context) => {
       toast.success("Generated draft successfully");
+      if (componentOnSuccess) {
+        componentOnSuccess(data, variables, context);
+      }
     },
-    onError: () => {
-      toast.error("Failed to generate draft");
+    onError: (error, variables, context) => {
+      toast.error(error.error || "Failed to generate draft");
+      if (componentOnError) {
+        componentOnError(error, variables, context);
+      }
     },
-    ...options,
   });
 };
 

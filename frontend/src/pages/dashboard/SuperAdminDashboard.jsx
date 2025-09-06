@@ -81,8 +81,8 @@ export default function SuperAdminDashboard({ authUser }) {
     .sort((a, b) => getRiskTotal(b) - getRiskTotal(a))
     .slice(0, 5);
 
-  const maxTopInstituteStudents = topInstitutesByStudents.length > 0 ? getRiskTotal(topInstitutesByStudents[0]) : 1;
-  const totalInstitutesForPercentage = globalInstituteStats.total;
+  const maxTopInstituteStudents = topInstitutesByStudents?.length > 0 ? getRiskTotal(topInstitutesByStudents[0]) : 1;
+  const totalInstitutesForPercentage = globalInstituteStats?.total;
 
   const stats = {
     totalInstitutes: globalInstituteStats?.total || 0,
