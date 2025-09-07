@@ -6,6 +6,7 @@ import {
 import {
   adminAggreg,
   superAdminAggreg,
+  mentorAggreg,
 } from "../controllers/aggregration.controller.js";
 
 const router = Router();
@@ -22,6 +23,13 @@ router.get(
   authMiddleware,
   authorizeRoles(["admin"]),
   adminAggreg
+);
+
+router.get(
+  "/mentor/stats",
+  authMiddleware,
+  authorizeRoles(["mentor"]),
+  mentorAggreg
 );
 
 export default router;

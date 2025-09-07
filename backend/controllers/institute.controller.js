@@ -4,6 +4,7 @@ import stringSimilarity from "string-similarity";
 import Metadata from "../models/metadata.model.js";
 import mongoose from "mongoose";
 import Student from "../models/student.model.js";
+import { normalize } from "../utils/configUtils.js";
 
 export const getInstitutes = async (req, res) => {
   try {
@@ -136,8 +137,6 @@ export const getCurrInstitute = async (req, res) => {
   }
 };
 
-const normalize = (str) => (str || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-
 export const generateDraftConfig = async (req, res) => {
   try {
     const { headers } = req.body;
@@ -183,7 +182,7 @@ export const generateDraftConfig = async (req, res) => {
         bestMatch && bestMatch.rating > 0.5 ? bestMatch.meta : null;
 
       return {
-        csvHeader: header,
+        csvHeader: normHeader,
         fieldKey: fieldMeta ? fieldMeta.fieldKey : null,
         type: fieldMeta ? fieldMeta.type : "string",
         required: fieldMeta ? fieldMeta.required : false,
@@ -193,14 +192,8 @@ export const generateDraftConfig = async (req, res) => {
 
     const seenFieldKeys = new Set();
     const finalDraft = initialDraft.filter((item) => {
-      if (!item.fieldKey) {
-        return true;
-      }
-
-      if (seenFieldKeys.has(item.fieldKey)) {
-        return false;
-      }
-
+      if (!item.fieldKey) return true;
+      if (seenFieldKeys.has(item.fieldKey)) return false;
       seenFieldKeys.add(item.fieldKey);
       return true;
     });
@@ -242,7 +235,9 @@ export const updateConfig = async (req, res) => {
         .json({ success: false, error: "Only admins can update config" });
     }
 
-    columns = columns.filter((column) => column.fieldKey);
+    columns = columns
+      .filter((column) => column.fieldKey)
+      .map((c) => ({ ...c, csvHeader: normalize(c.csvHeader) }));
 
     const requiredMetadata = await Metadata.find({ required: true });
     const providedFieldKeys = new Set(columns.map((c) => c.fieldKey));
@@ -311,7 +306,9 @@ export const lockConfig = async (req, res) => {
       }
 
       const requiredMetadata = await Metadata.find({ required: true });
-      const mappedFieldKeys = new Set(currentConfig.map((c) => c.fieldKey));
+      const mappedFieldKeys = new Set(
+        currentConfig.map((c) => c.fieldKey).filter(Boolean)
+      );
 
       const missingFields = requiredMetadata
         .filter((meta) => !mappedFieldKeys.has(meta.fieldKey))

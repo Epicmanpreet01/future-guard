@@ -9,6 +9,7 @@ import userRoutes from "./routes/user.route.js";
 import instituteRoutes from "./routes/institute.route.js";
 import aggregationRoutes from "./routes/aggregation.route.js";
 import metadataRoutes from "./routes/metadata.route.js";
+import mentorRoutes from "./routes/mentor.route.js";
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.use("/api/user", userRoutes);
 app.use("/api/institute", instituteRoutes);
 app.use("/api/aggregation", aggregationRoutes);
 app.use("/api/metadata", metadataRoutes);
+app.use("/api/mentor", mentorRoutes);
 
 app.use((err, _req, res, _next) => {
   console.error("Unhandled error:", err);

@@ -80,3 +80,36 @@ export const adminAggreg = async (req, res) => {
       .json({ success: false, error: "Internal server error" });
   }
 };
+
+export const mentorAggreg = async (req, res) => {
+  const { user: currUser } = req;
+
+  try {
+    const mentorDoc = await Admin.findById(currUser.userId);
+    if (!mentorDoc)
+      return res
+        .status(404)
+        .json({ success: false, error: "Aggregations not found" });
+
+    const aggregations =
+      mentorDoc.aggregations.toObject?.() || mentorDoc.aggregations;
+
+    const risk = aggregations.risk || { high: 0, medium: 0, low: 0 };
+
+    aggregations.risk = {
+      ...risk,
+      total: (risk.high || 0) + (risk.medium || 0) + (risk.low || 0),
+    };
+
+    return res.status(200).json({
+      success: true,
+      message: "aggregations found successfully",
+      data: aggregations,
+    });
+  } catch (error) {
+    console.error(`Error occured fetching aggregations: ${error}`);
+    return res
+      .status(500)
+      .json({ success: false, error: "Internal server error" });
+  }
+};
