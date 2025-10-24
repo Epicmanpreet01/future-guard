@@ -1,15 +1,32 @@
 from fastapi import FastAPI
-import uvicorn
+from core.schemas import StudentBatch, PredictionResponse, ExplanationResponse, RecommendationResponse
+from core import predicter, explainer, recommender
+app = FastAPI(title="FutureGuard ML Service", version="0.1.0")
 
-from dotenv import dotenv_values
+@app.post("/predict", response_model=PredictionResponse)
+def predict(data: StudentBatch):
+  """
+  Accepts student JSON batch, returns risk predictions.
+  """
+  preds = predicter.predict(data)
+  return {"predictions": preds}
 
-CONFIG = dotenv_values('.env')
+@app.post("/explain", response_model=ExplanationResponse)
+def explain(data: StudentBatch):
+  """
+  Accepts student JSON batch, returns SHAP/LIME explanations.
+  """
+  explanations = explainer.explain(data.students)
+  return {"explanations": explanations}
 
-app = FastAPI()
+@app.post("/recommend", response_model=RecommendationResponse)
+def recommend(data: StudentBatch):
+  """
+  Accepts student JSON batch, returns counseling recommendations.
+  """
+  recs = recommender.recommend(data.students)
+  return {"recommendations": recs}
 
-@app.get('/')
-def root():
-  return { 'success': True, 'message': "ml service root accessed", 'data':[] }
-
-if __name__ == '__main__':
-  uvicorn.run(app,host='127.0.0.1', port=int(CONFIG['ML_SERVICE_PORT']))
+@app.get("/health")
+def health_check():
+  return {"status": "ok"}

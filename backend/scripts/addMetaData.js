@@ -199,21 +199,25 @@ const fields = [
   },
 ];
 
+function getFeatures() {
+  return fields.filter((field) => field.useInML).map((field) => field.fieldKey);
+}
+
 async function seedMetadata() {
   try {
     await mongoose.connect(process.env.MONGO_URI);
 
-    console.log("✅ Connected to MongoDB");
+    console.log("Connected to MongoDB");
 
     await Metadata.deleteMany({});
-    console.log("🗑️ Cleared existing Metadata");
+    console.log("Cleared existing Metadata");
 
     await Metadata.insertMany(fields);
-    console.log("✨ Inserted metadata fields successfully");
+    console.log("Inserted metadata fields successfully");
 
     process.exit(0);
   } catch (err) {
-    console.error("❌ Error seeding metadata:", err);
+    console.error("Error seeding metadata:", err);
     process.exit(1);
   }
 }
