@@ -43,7 +43,7 @@ const riskColors = { Low: "#22c55e", Medium: "#f59e0b", High: "#ef4444" };
 
 const mapApiStudentToUI = (s) => ({
   id: s.rollId,
-  name: s.features?.studentName || "Student",
+  name: s.studentName || "Student",
   risk: s.riskLabel.charAt(0).toUpperCase() + s.riskLabel.slice(1),
   attendance: Number(s.features?.attendancePercentage || 0),
   feesPaid: String(s.features?.feesPaid) === "true",
@@ -84,16 +84,36 @@ export default function MentorDashboard({ authUser }) {
   const [showAllStudentsModal, setShowAllStudentsModal] = useState(false);
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
 
-  const highRiskStudents = useMemo(
-    () => students.filter((s) => s.risk === "High"),
-    [students]
-  );
+  const highRiskStudents = useMemo(() => {
+    return [...students]
+      .sort((a, b) => {
+        const order = { High: 3, Medium: 2, Low: 1 };
+        return order[b.risk] - order[a.risk];
+      })
+      .slice(0, 10);
+  }, [students]);
+
+  const hasUploadedFile = uploadedStudents.length > 0;
+
+  const avgAttendance = hasUploadedFile
+    ? Math.round(
+        uploadedStudents.reduce(
+          (sum, s) => sum + Number(s.features?.attendancePercentage || 0),
+          0
+        ) / uploadedStudents.length
+      )
+    : null;
+
+  const feesPendingCount = hasUploadedFile
+    ? uploadedStudents.filter((s) => String(s.features?.feesPaid) !== "true")
+        .length
+    : null;
 
   const stats = {
     totalStudents: aggregations?.risk?.total || 0,
     highRiskStudents: aggregations?.risk?.high || 0,
-    avgAttendance: "--", // not in backend yet
-    feesPending: "--", // not in backend yet
+    avgAttendance: hasUploadedFile ? avgAttendance : "...",
+    feesPending: hasUploadedFile ? feesPendingCount : "...",
   };
 
   const riskChartData = useMemo(
@@ -875,9 +895,12 @@ const StudentProfileModal = ({ student, onClose }) => {
               Mentor Notes
             </h5>
             <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
-              {student.risk === "High"
-                ? "Priya has shown a significant drop in attendance. Needs immediate follow-up regarding her pending fees and recent test scores."
-                : "Ravi is a consistent performer with excellent attendance. No immediate concerns."}
+              <strong>Risk Reason:</strong>{" "}
+              {student.explanation?.rule_reasons?.join(", ") ||
+                "No explanation available"}
+              <br />
+              <strong>Recommendation:</strong>{" "}
+              {student.recommendation || "No recommendation available"}
             </p>
           </div>
         </div>

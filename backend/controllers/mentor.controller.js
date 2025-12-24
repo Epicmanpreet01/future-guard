@@ -2,32 +2,83 @@ import fs from "fs";
 import csv from "csv-parser";
 import XLSX from "xlsx";
 import axios from "axios";
-import crypto from "crypto";
 
 import Metadata from "../models/metadata.model.js";
 import Student from "../models/student.model.js";
 import { Mentor, Admin, SuperAdmin } from "../models/user.model.js";
-import { normalize } from "../utils/authUtils.js";
 import { mapToMLFeatures } from "../utils/mlFeatureMapper.js";
+
+/* ----------------------------------------
+ * Strong normalization helpers
+ * ---------------------------------------*/
+const normalizeKey = (key = "") =>
+  key
+    .toString()
+    .toLowerCase()
+    .replace(/\(.*?\)/g, "") // remove (%, etc)
+    .replace(/[%?]/g, "")
+    .replace(/[_\-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const normalizeBoolean = (val) => {
+  if (typeof val === "boolean") return val;
+  if (val == null) return undefined;
+  const v = val.toString().toLowerCase().trim();
+  if (["true", "yes", "y", "1", "paid"].includes(v)) return true;
+  if (["false", "no", "n", "0", "unpaid", "pending"].includes(v)) return false;
+  return undefined;
+};
+
+const normalizeNumber = (val) => {
+  if (val == null || val === "") return undefined;
+  const n = Number(val);
+  return Number.isNaN(n) ? undefined : n;
+};
 
 export const uploadFile = async (req, res) => {
   const { user } = req;
   const files = req.files;
 
   if (!files?.length) {
-    return res.status(400).json({ success: false, error: "No files uploaded" });
+    return res.status(400).json({
+      success: false,
+      error: "No files uploaded",
+    });
   }
 
   try {
-    const metadata = await Metadata.find({ useInML: true });
+    const metadata = await Metadata.find({});
 
     /* ----------------------------------------
-     * Build alias → metadata map
+     * Required fields
+     * ---------------------------------------*/
+    const requiredFields = metadata
+      .filter((m) => m.required)
+      .map((m) => m.fieldKey);
+
+    /* ----------------------------------------
+     * Build enhanced alias → metadata map
      * ---------------------------------------*/
     const aliasMap = new Map();
+
     metadata.forEach((m) => {
-      aliasMap.set(normalize(m.fieldKey), m);
-      (m.synonyms || []).forEach((s) => aliasMap.set(normalize(s), m));
+      // main key
+      aliasMap.set(normalizeKey(m.fieldKey), m);
+
+      // display name
+      if (m.displayName) {
+        aliasMap.set(normalizeKey(m.displayName), m);
+      }
+
+      // synonyms
+      (m.synonyms || []).forEach((s) => {
+        aliasMap.set(normalizeKey(s), m);
+      });
+
+      // common auto-variants
+      aliasMap.set(normalizeKey(m.fieldKey.replace(/([A-Z])/g, " $1")), m);
+      aliasMap.set(normalizeKey(m.fieldKey.replace(/([A-Z])/g, "_$1")), m);
     });
 
     const results = [];
@@ -65,23 +116,61 @@ export const uploadFile = async (req, res) => {
       }
 
       /* ----------------------------------------
-       * Standardize rows
+       * Standardize rows (ROBUST MAPPING)
        * ---------------------------------------*/
-      const standardizedRows = rows.map((row) => {
-        const out = {};
+      const standardizedRows = rows.map((row, index) => {
+        const ml = {};
+        const identity = {};
 
-        Object.entries(row).forEach(([key, value]) => {
-          const meta = aliasMap.get(normalize(key));
-          if (meta) out[meta.fieldKey] = value;
-        });
+        Object.entries(row).forEach(([rawKey, rawValue]) => {
+          const meta = aliasMap.get(normalizeKey(rawKey));
+          if (!meta) return;
 
-        metadata.forEach((m) => {
-          if (out[m.fieldKey] === undefined && m.defaultValue !== undefined) {
-            out[m.fieldKey] = m.defaultValue;
+          let value = rawValue;
+
+          if (meta.type === "number") {
+            value = normalizeNumber(rawValue);
+          }
+
+          if (meta.type === "boolean") {
+            value = normalizeBoolean(rawValue);
+          }
+
+          if (meta.useInML) {
+            ml[meta.fieldKey] = value;
+          } else {
+            identity[meta.fieldKey] = value;
           }
         });
 
-        return out;
+        // defaults for ML fields
+        metadata.forEach((m) => {
+          if (
+            m.useInML &&
+            ml[m.fieldKey] === undefined &&
+            m.defaultValue !== undefined
+          ) {
+            ml[m.fieldKey] = m.defaultValue;
+          }
+        });
+
+        const merged = { ...ml, ...identity };
+
+        /* ----------------------------------------
+         * REQUIRED FIELD CHECK (EARLY FAIL)
+         * ---------------------------------------*/
+        const missing = requiredFields.filter(
+          (f) =>
+            merged[f] === undefined || merged[f] === null || merged[f] === ""
+        );
+
+        if (missing.length > 0) {
+          throw new Error(
+            `Row ${index + 1} is missing required fields: ${missing.join(", ")}`
+          );
+        }
+
+        return merged;
       });
 
       /* ----------------------------------------
@@ -89,7 +178,7 @@ export const uploadFile = async (req, res) => {
        * ---------------------------------------*/
       const payload = {
         students: standardizedRows.map((row) => ({
-          id: crypto.randomUUID(),
+          id: row.studentId, // ✅ REAL rollId
           features: mapToMLFeatures(row),
         })),
       };
@@ -106,10 +195,6 @@ export const uploadFile = async (req, res) => {
        * ---------------------------------------*/
       const riskCounters = { high: 0, medium: 0, low: 0 };
       let successCount = 0;
-
-      /* ----------------------------------------
-       * 🔥 NEW: standardized student table payload
-       * ---------------------------------------*/
       const studentsTable = [];
 
       /* ----------------------------------------
@@ -117,10 +202,9 @@ export const uploadFile = async (req, res) => {
        * ---------------------------------------*/
       for (let i = 0; i < predictions.length; i++) {
         const prediction = predictions[i];
-        const newRisk = prediction.risk_label.toLowerCase();
         const row = standardizedRows[i];
-
-        const rollId = row.studentId || crypto.randomUUID();
+        const newRisk = prediction.risk_label.toLowerCase();
+        const rollId = prediction.id;
 
         const existing = await Student.findOne({
           rollId,
@@ -131,7 +215,6 @@ export const uploadFile = async (req, res) => {
 
         if (existing) {
           const oldRisk = existing.riskValue;
-
           success =
             (oldRisk === "high" || oldRisk === "medium") && newRisk === "low";
 
@@ -154,7 +237,6 @@ export const uploadFile = async (req, res) => {
                 [`aggregations.risk.${newRisk}`]: 1,
               },
             });
-
             await Admin.findOneAndUpdate(
               { instituteId: user.instituteId },
               {
@@ -164,7 +246,6 @@ export const uploadFile = async (req, res) => {
                 },
               }
             );
-
             await SuperAdmin.updateOne(
               {},
               {
@@ -187,14 +268,10 @@ export const uploadFile = async (req, res) => {
           await Mentor.findByIdAndUpdate(user.userId, {
             $inc: { [`aggregations.risk.${newRisk}`]: 1 },
           });
-
           await Admin.findOneAndUpdate(
             { instituteId: user.instituteId },
-            {
-              $inc: { [`aggregations.risk.${newRisk}`]: 1 },
-            }
+            { $inc: { [`aggregations.risk.${newRisk}`]: 1 } }
           );
-
           await SuperAdmin.updateOne(
             {},
             {
@@ -206,37 +283,26 @@ export const uploadFile = async (req, res) => {
         riskCounters[newRisk]++;
         if (success) successCount++;
 
-        /* ----------------------------------------
-         * 🔥 NEW: push standardized student row
-         * ---------------------------------------*/
         studentsTable.push({
           rollId,
+          studentName: row.studentName,
           riskLabel: newRisk,
           riskScore: prediction.risk_score,
           success,
-
           explanation: prediction.explanation,
           recommendation: prediction.recommendation,
-
           features: row,
         });
       }
 
-      /* ----------------------------------------
-       * Increment success counters
-       * ---------------------------------------*/
       if (successCount > 0) {
         await Mentor.findByIdAndUpdate(user.userId, {
           $inc: { "aggregations.success": successCount },
         });
-
         await Admin.findOneAndUpdate(
           { instituteId: user.instituteId },
-          {
-            $inc: { "aggregations.success": successCount },
-          }
+          { $inc: { "aggregations.success": successCount } }
         );
-
         await SuperAdmin.updateOne(
           {},
           {
@@ -245,9 +311,6 @@ export const uploadFile = async (req, res) => {
         );
       }
 
-      /* ----------------------------------------
-       * Response payload
-       * ---------------------------------------*/
       results.push({
         fileName: file.originalname,
         totalRows: predictions.length,
@@ -266,9 +329,9 @@ export const uploadFile = async (req, res) => {
     });
   } catch (error) {
     console.error("Upload error:", error);
-    return res.status(500).json({
+    return res.status(400).json({
       success: false,
-      error: "Internal server error",
+      error: error.message,
     });
   }
 };

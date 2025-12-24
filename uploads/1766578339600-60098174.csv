@@ -1,0 +1,4 @@
+studentId,age,attendancePercentage,cgpa,feesPaid,previousYearPerformance
+STU001,19,92,8.4,true,75
+STU002,22,40,3.2,false,40
+STU003,20,70,6.1,true,65
