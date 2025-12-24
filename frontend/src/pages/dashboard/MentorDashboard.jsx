@@ -55,9 +55,6 @@ const mapApiStudentToUI = (s) => ({
   recommendation: s.recommendation,
 });
 
-/* ===============================
-   MAIN DASHBOARD
-   =============================== */
 export default function MentorDashboard({ authUser }) {
   const fileInputRef = useRef(null);
 
@@ -335,8 +332,6 @@ export default function MentorDashboard({ authUser }) {
   );
 }
 
-// --- REUSABLE SUB-COMPONENTS ---
-
 // eslint-disable-next-line no-unused-vars
 const StatCard = ({ icon: Icon, title, value, color }) => (
   <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -413,7 +408,7 @@ const QuickActions = ({
           </>
         ) : (
           <>
-            <Upload className="w-5 h-5 mr-3 text-gray-500" />
+            <Download className="w-5 h-5 mr-3 text-gray-500" />
             Import Students (CSV/Excel)
           </>
         )}
@@ -424,7 +419,7 @@ const QuickActions = ({
         }
         className="w-full flex items-center px-4 py-3 text-left text-sm font-medium text-gray-700 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
       >
-        <Download className="w-5 h-5 mr-3 text-gray-500" />
+        <Upload className="w-5 h-5 mr-3 text-gray-500" />
         Export Students (CSV)
       </button>
     </div>
