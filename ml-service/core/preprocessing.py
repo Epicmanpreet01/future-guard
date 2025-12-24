@@ -23,7 +23,6 @@ CATEGORICAL_FEATURES = [
   "parentEducation",
   "parentEmployentStatus",
   "feesPaid",
-  "notEnrolled",
 ]
 
 MODEL_FEATURE_ORDER = CATEGORICAL_FEATURES + CONTINUOUS_FEATURES

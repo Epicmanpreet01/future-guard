@@ -1,4 +1,3 @@
-// controllers/mentor.controller.js
 import fs from "fs";
 import csv from "csv-parser";
 import XLSX from "xlsx";
@@ -103,10 +102,15 @@ export const uploadFile = async (req, res) => {
       const predictions = data.results;
 
       /* ----------------------------------------
-       * Counters (response-only)
+       * Counters
        * ---------------------------------------*/
       const riskCounters = { high: 0, medium: 0, low: 0 };
       let successCount = 0;
+
+      /* ----------------------------------------
+       * 🔥 NEW: standardized student table payload
+       * ---------------------------------------*/
+      const studentsTable = [];
 
       /* ----------------------------------------
        * Student upsert + aggregation updates
@@ -114,8 +118,9 @@ export const uploadFile = async (req, res) => {
       for (let i = 0; i < predictions.length; i++) {
         const prediction = predictions[i];
         const newRisk = prediction.risk_label.toLowerCase();
+        const row = standardizedRows[i];
 
-        const rollId = standardizedRows[i].studentId || crypto.randomUUID();
+        const rollId = row.studentId || crypto.randomUUID();
 
         const existing = await Student.findOne({
           rollId,
@@ -142,7 +147,6 @@ export const uploadFile = async (req, res) => {
             }
           );
 
-          // 🔥 Adjust risk aggregations ONLY if risk changed
           if (oldRisk !== newRisk) {
             await Mentor.findByIdAndUpdate(user.userId, {
               $inc: {
@@ -172,7 +176,6 @@ export const uploadFile = async (req, res) => {
             );
           }
         } else {
-          // New student
           await Student.create({
             rollId,
             instituteId: user.instituteId,
@@ -202,6 +205,21 @@ export const uploadFile = async (req, res) => {
 
         riskCounters[newRisk]++;
         if (success) successCount++;
+
+        /* ----------------------------------------
+         * 🔥 NEW: push standardized student row
+         * ---------------------------------------*/
+        studentsTable.push({
+          rollId,
+          riskLabel: newRisk,
+          riskScore: prediction.risk_score,
+          success,
+
+          explanation: prediction.explanation,
+          recommendation: prediction.recommendation,
+
+          features: row,
+        });
       }
 
       /* ----------------------------------------
@@ -227,11 +245,15 @@ export const uploadFile = async (req, res) => {
         );
       }
 
+      /* ----------------------------------------
+       * Response payload
+       * ---------------------------------------*/
       results.push({
         fileName: file.originalname,
         totalRows: predictions.length,
         riskSummary: riskCounters,
         successCount,
+        students: studentsTable,
       });
 
       fs.unlinkSync(file.path);

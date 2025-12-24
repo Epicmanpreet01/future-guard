@@ -31,7 +31,6 @@ export function mapToMLFeatures(row) {
     parentEducation: Number(row.previousYearPerformance ?? 0),
     parentEmployentStatus: 0,
     feesPaid: row.feesPaid ? 1 : 0,
-    notEnrolled: totalCreditsEnrolled === 0 ? 1 : 0,
 
     // continuous
     ageAtEnrollment,
