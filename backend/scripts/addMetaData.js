@@ -13,7 +13,16 @@ const fields = [
     required: true,
     category: "identity",
     useInML: false,
-    synonyms: ["id", "student_no", "student number", "enrollment id"],
+    synonyms: [
+      "id",
+      "student_no",
+      "student number",
+      "enrollment id",
+      "roll id",
+      "roll_no",
+      "roll no",
+      "roll",
+    ],
   },
   {
     fieldKey: "studentName",
@@ -23,15 +32,6 @@ const fields = [
     category: "identity",
     useInML: false,
     synonyms: ["name", "full name"],
-  },
-  {
-    fieldKey: "rollNumber",
-    displayName: "Roll Number",
-    type: "string",
-    required: false,
-    category: "identity",
-    useInML: false,
-    synonyms: ["roll id", "roll_no", "roll no", "roll"],
   },
   {
     fieldKey: "dateOfBirth",

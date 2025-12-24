@@ -220,11 +220,6 @@ export const registerInstituteWithAdmin = async (req, res) => {
         {
           instituteName,
           adminId: admin._id,
-          config: {
-            columns: [],
-            locked: false,
-            updatedAt: new Date(),
-          },
         },
       ],
       { session }

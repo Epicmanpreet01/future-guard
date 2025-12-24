@@ -13,15 +13,7 @@ const useMetaData = () => {
         return data?.data;
       } catch (error) {
         console.error(`Error occured while fetching metadata: ${error}`);
-        return {
-          fieldKey: "",
-          displayName: "",
-          type: "",
-          requrired: false,
-          category: "",
-          useInML: false,
-          synonyms: [],
-        };
+        return [];
       }
     },
   });

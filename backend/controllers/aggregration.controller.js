@@ -1,4 +1,4 @@
-import { Admin, SuperAdmin, User } from "../models/user.model.js";
+import { Admin, SuperAdmin, Mentor } from "../models/user.model.js";
 
 export const superAdminAggreg = async (req, res) => {
   const { user: currUser } = req;
@@ -85,7 +85,10 @@ export const mentorAggreg = async (req, res) => {
   const { user: currUser } = req;
 
   try {
-    const mentorDoc = await Admin.findById(currUser.userId);
+    const mentorDoc = await Mentor.findById(currUser.userId).select(
+      "aggregations"
+    );
+
     if (!mentorDoc)
       return res
         .status(404)

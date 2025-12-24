@@ -1,3 +1,4 @@
+// models/metadata.model.js
 import { Schema, model } from "mongoose";
 
 const Metadata = model(
@@ -14,6 +15,7 @@ const Metadata = model(
     category: { type: String },
     useInML: { type: Boolean, default: true },
     synonyms: [{ type: String }],
+    defaultValue: Schema.Types.Mixed, // NEW
   })
 );
 

@@ -23,3 +23,10 @@ export const signAndSetToken = (res, payload) => {
     maxAge: 24 * 60 * 60 * 1000,
   });
 };
+
+export const normalize = (str = "") =>
+  str
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, "");
