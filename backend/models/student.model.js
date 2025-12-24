@@ -26,7 +26,7 @@ const Student = model(
       },
 
       // Derived flag
-      success: { type: Boolean, default: false },
+      success: { type: Boolean, default: false, immutable: true },
 
       lastUpdatedByMentor: {
         type: Schema.Types.ObjectId,

@@ -9,6 +9,15 @@ const AggregationSchema = new Schema({
   success: { type: Number, default: 0 },
 });
 
+const UploadHistorySchema = new Schema(
+  {
+    fileName: { type: String, required: true },
+    uploadedAt: { type: Date, default: Date.now },
+    studentCount: { type: Number, required: true },
+  },
+  { _id: false }
+);
+
 const BaseUserSchema = new Schema(
   {
     name: { type: String, required: true, trim: true },
@@ -68,6 +77,14 @@ const SuperAdmin = User.discriminator("superAdmin", SuperAdminSchema);
 
 const Admin = User.discriminator("admin", AdminSchema);
 
-const Mentor = User.discriminator("mentor", new Schema({}));
+const Mentor = User.discriminator(
+  "mentor",
+  new Schema({
+    uploadHistory: {
+      type: [UploadHistorySchema],
+      default: [],
+    },
+  })
+);
 
 export { User, SuperAdmin, Admin, Mentor };

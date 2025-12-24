@@ -230,7 +230,10 @@ export const uploadFile = async (req, res) => {
             }
           );
 
-          if (oldRisk !== newRisk) {
+          if (
+            oldRisk !== newRisk ||
+            existing.lastUpdatedByMentor.toString() !== user.userId.toString()
+          ) {
             await Mentor.findByIdAndUpdate(user.userId, {
               $inc: {
                 [`aggregations.risk.${oldRisk}`]: -1,
@@ -317,6 +320,16 @@ export const uploadFile = async (req, res) => {
         riskSummary: riskCounters,
         successCount,
         students: studentsTable,
+      });
+
+      await Mentor.findByIdAndUpdate(user.userId, {
+        $push: {
+          uploadHistory: {
+            fileName: file.originalname,
+            studentCount: predictions.length,
+            uploadedAt: new Date(),
+          },
+        },
       });
 
       fs.unlinkSync(file.path);

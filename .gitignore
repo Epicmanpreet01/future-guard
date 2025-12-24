@@ -28,3 +28,5 @@ ml-service/.mlserviceEnv
 test
 data
 /ml-service/models
+
+uploads

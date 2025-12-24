@@ -37,6 +37,7 @@ import { useUploadedStudents } from "../../hooks/queries/useUploadStudents";
 import { useUploadStudentsMutation } from "../../hooks/mutations/useUploadStudentsMutation";
 import { useLogoutMutation } from "../../hooks/mutations/authMutation";
 import useAggregationsQuery from "../../hooks/queries/useAggregations";
+import { exportInstituteTableCSV } from "../../utils/dashboardUtils";
 
 const riskToNumber = { Low: 1, Medium: 2, High: 3 };
 const riskColors = { Low: "#22c55e", Medium: "#f59e0b", High: "#ef4444" };
@@ -137,16 +138,18 @@ export default function MentorDashboard({ authUser }) {
     [aggregations]
   );
 
-  const attendanceChartData = useMemo(
-    () => [
-      { month: "May", attendance: 82 },
-      { month: "June", attendance: 85 },
-      { month: "July", attendance: 78 },
-      { month: "Aug", attendance: 88 },
-      { month: "Sept", attendance: 81 },
-    ],
-    []
-  );
+  const successVsRiskData = useMemo(() => {
+    const highRisk = aggregations?.risk?.high || 0;
+    const success = aggregations?.success || 0;
+
+    return [
+      {
+        name: "Students",
+        Success: success,
+        "High Risk": Math.max(highRisk - success, 0),
+      },
+    ];
+  }, [aggregations]);
 
   if (aggregationsPending) {
     return (
@@ -279,35 +282,20 @@ export default function MentorDashboard({ authUser }) {
             </div>
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Monthly Attendance Trend
+                Success vs High-Risk Students
               </h3>
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart
-                  data={attendanceChartData}
-                  margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
+                  data={successVsRiskData}
+                  margin={{ top: 10, right: 20, left: -10, bottom: 5 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis
-                    dataKey="month"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis fontSize={12} tickLine={false} axisLine={false} />
-                  <Tooltip
-                    cursor={{ fill: "rgba(245, 158, 11, 0.1)" }}
-                    contentStyle={{
-                      backgroundColor: "white",
-                      borderRadius: "0.5rem",
-                      borderColor: "#e5e7eb",
-                    }}
-                  />
-                  <Bar
-                    dataKey="attendance"
-                    name="Avg. Attendance"
-                    fill="#f97316"
-                    radius={[4, 4, 0, 0]}
-                  />
+                  <XAxis dataKey="name" tickLine={false} axisLine={false} />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="Success" stackId="a" fill="#22c55e" />
+                  <Bar dataKey="High Risk" stackId="a" fill="#ef4444" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -325,6 +313,7 @@ export default function MentorDashboard({ authUser }) {
         <AnalyticsModal
           students={students}
           onClose={() => setShowAnalyticsModal(false)}
+          authUser={authUser}
         />
       )}
 
@@ -348,6 +337,7 @@ export default function MentorDashboard({ authUser }) {
 
 // --- REUSABLE SUB-COMPONENTS ---
 
+// eslint-disable-next-line no-unused-vars
 const StatCard = ({ icon: Icon, title, value, color }) => (
   <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
     <div className="flex items-center">
@@ -394,11 +384,13 @@ const QuickActions = ({
         Import Students (CSV/Excel)
       </button>
       <button
-        onClick={() => alert("Exporting student data...")}
+        onClick={() =>
+          exportInstituteTableCSV("student-table", "students_export")
+        }
         className="w-full flex items-center px-4 py-3 text-left text-sm font-medium text-gray-700 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
       >
         <Download className="w-5 h-5 mr-3 text-gray-500" />
-        Export Students (CSV/Excel)
+        Export Students (CSV)
       </button>
     </div>
   </div>
@@ -416,7 +408,7 @@ const StudentTable = ({ students, isModal = false }) => {
 
   return (
     <>
-      <table className="w-full">
+      <table id="student-table" className="w-full">
         <thead className="bg-gray-50 sticky top-0 z-10">
           <tr>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -654,18 +646,28 @@ const AllStudentsModal = ({ students, onClose }) => {
   );
 };
 
-const AnalyticsModal = ({ students, onClose }) => {
+const AnalyticsModal = ({ students, onClose, authUser }) => {
   const riskData = useMemo(
     () => students.map((s) => ({ gpa: s.gpa, risk: riskToNumber[s.risk] })),
     [students]
   );
-  const riskDataAllTime = useMemo(
-    () =>
-      riskData
-        .map((d) => ({ ...d, gpa: d.gpa - (Math.random() * 0.5 - 0.25) }))
-        .slice(0, 10),
-    [riskData]
-  );
+
+  const feesRiskData = useMemo(() => {
+    const buckets = {
+      Paid: { High: 0, Medium: 0, Low: 0 },
+      Pending: { High: 0, Medium: 0, Low: 0 },
+    };
+
+    students.forEach((s) => {
+      const key = s.feesPaid ? "Paid" : "Pending";
+      buckets[key][s.risk]++;
+    });
+
+    return Object.entries(buckets).map(([name, values]) => ({
+      name,
+      ...values,
+    }));
+  }, [students]);
 
   const attendanceRiskData = useMemo(() => {
     const categories = {
@@ -741,45 +743,24 @@ const AnalyticsModal = ({ students, onClose }) => {
                 </ScatterChart>
               </ResponsiveContainer>
             </AnalyticsCard>
-            <AnalyticsCard title="GPA vs. Risk (All Time)">
+            <AnalyticsCard title="Fees Paid vs Risk">
               <ResponsiveContainer width="100%" height={250}>
-                <ScatterChart
-                  margin={{ top: 20, right: 30, bottom: 20, left: 20 }}
+                <BarChart
+                  data={feesRiskData}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                 >
-                  <CartesianGrid />
-                  <XAxis
-                    type="number"
-                    dataKey="gpa"
-                    name="GPA"
-                    domain={[5, 10]}
-                  >
-                    <Label value="GPA" offset={-15} position="insideBottom" />
-                  </XAxis>
-                  <YAxis
-                    type="number"
-                    dataKey="risk"
-                    name="Risk"
-                    domain={[0, 4]}
-                    width={80}
-                    ticks={[1, 2, 3]}
-                    tickFormatter={(val) => ["Low", "Medium", "High"][val - 1]}
-                  >
-                    <Label
-                      value="Risk Level"
-                      angle={-90}
-                      position="insideLeft"
-                      style={{ textAnchor: "middle" }}
-                    />
-                  </YAxis>
-                  <Tooltip cursor={{ strokeDasharray: "3 3" }} />
-                  <Scatter
-                    name="Students"
-                    data={riskDataAllTime}
-                    fill="#f97316"
-                  />
-                </ScatterChart>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="High" stackId="a" fill="#ef4444" />
+                  <Bar dataKey="Medium" stackId="a" fill="#f59e0b" />
+                  <Bar dataKey="Low" stackId="a" fill="#22c55e" />
+                </BarChart>
               </ResponsiveContainer>
             </AnalyticsCard>
+
             <AnalyticsCard title="Attendance vs. Risk">
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart
@@ -803,22 +784,30 @@ const AnalyticsModal = ({ students, onClose }) => {
               </ResponsiveContainer>
             </AnalyticsCard>
             <AnalyticsCard title="Upload History">
-              <div className="space-y-3 pt-2">
-                <UploadItem
-                  fileName="fall_semester_batch1.csv"
-                  date="2025-08-01"
-                  count={50}
-                />
-                <UploadItem
-                  fileName="midterm_update.xlsx"
-                  date="2025-09-15"
-                  count={48}
-                />
-                <UploadItem
-                  fileName="attendance_report.csv"
-                  date="2025-09-30"
-                  count={50}
-                />
+              <div className="pt-2 max-h-[260px] overflow-y-auto pr-1">
+                {(authUser.uploadHistory || []).length === 0 ? (
+                  <p className="text-sm text-gray-500 text-center py-6">
+                    No uploads yet
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {[...authUser.uploadHistory]
+                      .sort(
+                        (a, b) =>
+                          new Date(b.uploadedAt) - new Date(a.uploadedAt)
+                      )
+                      .map((u) => (
+                        <UploadItem
+                          key={u.uploadedAt}
+                          fileName={u.fileName}
+                          date={new Date(u.uploadedAt)
+                            .toISOString()
+                            .slice(0, 10)}
+                          count={u.studentCount}
+                        />
+                      ))}
+                  </div>
+                )}
               </div>
             </AnalyticsCard>
           </div>

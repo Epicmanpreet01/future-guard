@@ -7,10 +7,10 @@ def rule_based_risk(features: dict) -> dict:
   reasons = []
 
   # HIGH RISK RULES
-  if attendance < 60:
-    reasons.append("Attendance below 60%")
-  if cgpa < 4:
-    reasons.append("CGPA below 4")
+  if attendance < 50:
+    reasons.append("Attendance below 50%")
+  if cgpa < 3:
+    reasons.append("CGPA below 3")
 
   if reasons:
     return {"risk": "high", "reasons": reasons}
@@ -18,8 +18,8 @@ def rule_based_risk(features: dict) -> dict:
   # MEDIUM RISK RULES
   if not fees_paid:
     reasons.append("Fees pending")
-  if attendance < 75:
-    reasons.append("Attendance below 75%")
+  if attendance < 60:
+    reasons.append("Attendance below 60%")
   if cgpa < 6:
     reasons.append("CGPA below 6")
 

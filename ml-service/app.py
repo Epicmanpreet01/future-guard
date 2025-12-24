@@ -14,7 +14,7 @@ app = FastAPI(title="FutureGuard ML Service", version="0.1.0")
 def risk_bucket(score: float) -> str:
   if score > 0.7:
     return "high"
-  if score > 0.4:
+  if score > 0.5:
     return "medium"
   return "low"
 
