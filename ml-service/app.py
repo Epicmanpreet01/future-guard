@@ -42,18 +42,27 @@ def predict(batch: StudentBatch):
       if severity[rule_risk] > severity[ml_risk]
       else ml_risk
     )
+    explanation = explain(
+      student.features,
+      rule_result,
+      ml_risk,
+      score
+    )
+
+    recommendation = recommend(
+      score,
+      final_risk,
+      student.features
+    )
 
     results.append({
       "id": student.id,
       "risk_score": round(score, 4),
       "risk_label": final_risk,
-      "explanation": {
-        "ml_risk": ml_risk,
-        "rule_risk": rule_risk,
-        "rule_reasons": rule_result["reasons"],
-      },
-      "recommendation": recommend(score)
+      "explanation": explanation,
+      "recommendation": recommendation
     })
+
   return {"results": results}
 
 
