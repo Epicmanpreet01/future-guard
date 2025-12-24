@@ -1,15 +1,19 @@
 import joblib
 import os
-import xgboost as xgb
 import pandas as pd
-import numpy as np
+import xgboost as xgb
 
-def load_model(model_path: str = 'ml-service/models') -> xgb.XGBClassifier:
-  no_of_models: int = len(os.listdir(model_path))
-  model: xgb.XGBClassifier = joblib.load(f'{model_path}/model_{no_of_models}.pth')
-  return model
+MODEL_DIR = "models/predictor"
+_model = None
 
-def predict(student_batch: pd.DataFrame) -> np.ndarray:
-  model: xgb.XGBClassifier = load_model()
-  probabilities: np.ndarray = model.predict_proba(student_batch)
-  return probabilities[:, 1]
+def load_model():
+  global _model
+  if _model is None:
+    models = sorted(os.listdir(MODEL_DIR))
+    _model = joblib.load(os.path.join(MODEL_DIR, models[-1]))
+  return _model
+
+def predict(features_df: pd.DataFrame) -> list[float]:
+  model = load_model()
+  probs = model.predict_proba(features_df)
+  return probs[:, 1].tolist()

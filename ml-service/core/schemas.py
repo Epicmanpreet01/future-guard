@@ -3,16 +3,17 @@ from typing import List, Dict, Any
 
 class Student(BaseModel):
   id: str
-  features: Dict[str, Any]  # e.g., {"attendance": 0.85, "gpa": 3.2}
+  features: Dict[str, Any]
 
 class StudentBatch(BaseModel):
   students: List[Student]
 
+class StudentResult(BaseModel):
+  id: str
+  risk_score: float
+  risk_label: str
+  explanation: Dict[str, Any]
+  recommendation: str
+
 class PredictionResponse(BaseModel):
-  predictions: List[Dict[str, Any]]  # [{"id": "...", "risk": "High"}]
-
-class ExplanationResponse(BaseModel):
-  explanations: List[Dict[str, Any]]  # [{"id": "...", "feature_importance": {...}}]
-
-class RecommendationResponse(BaseModel):
-  recommendations: List[Dict[str, Any]]  # [{"id": "...", "recommendation": "..."}]
+  results: List[StudentResult]

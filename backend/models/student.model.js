@@ -8,26 +8,36 @@ const Student = model(
       rollId: { type: String, required: true },
       instituteId: {
         type: Schema.Types.ObjectId,
-        ref: "Institute",
         required: true,
+        index: true,
       },
-      mentorId: {
-        type: Schema.Types.ObjectId,
-        ref: "User",
-        required: true,
-      },
+
+      // Current state
       riskValue: {
         type: String,
         enum: ["high", "medium", "low"],
         required: true,
       },
-      success: { type: Boolean },
 
-      standardizedInput: { type: Object },
-      metadataVersion: { type: Number, default: 1 },
+      // For outcome tracking
+      previousRiskValue: {
+        type: String,
+        enum: ["high", "medium", "low"],
+      },
+
+      // Derived flag
+      success: { type: Boolean, default: false },
+
+      lastUpdatedByMentor: {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+      },
     },
     { timestamps: true }
   )
 );
+
+// Prevent duplicates
+Student.schema.index({ rollId: 1, instituteId: 1 }, { unique: true });
 
 export default Student;

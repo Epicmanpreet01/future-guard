@@ -9,6 +9,6 @@ pydantic
 motor
 shap
 secure-smtplib
-uicorn
-dotenv
+uvicorn
+python-dotenv
 lime

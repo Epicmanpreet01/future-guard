@@ -1,15 +1,3 @@
-// controllers/mentor.controller.js
-import fs from "fs";
-import csv from "csv-parser";
-import XLSX from "xlsx";
-import axios from "axios";
-import crypto from "crypto";
-
-import Metadata from "../models/metadata.model.js";
-import Student from "../models/student.model.js";
-import { Mentor, Admin, SuperAdmin } from "../models/user.model.js";
-import { normalize } from "../utils/authUtils.js";
-
 export const uploadFile = async (req, res) => {
   const { user } = req;
   const files = req.files;
@@ -21,7 +9,7 @@ export const uploadFile = async (req, res) => {
   try {
     const metadata = await Metadata.find({ useInML: true });
 
-    /** ----------------------------------------
+    /* ----------------------------------------
      * Build alias → metadata map
      * ---------------------------------------*/
     const aliasMap = new Map();
@@ -36,7 +24,7 @@ export const uploadFile = async (req, res) => {
       let rows = [];
       const ext = file.originalname.split(".").pop().toLowerCase();
 
-      /** ----------------------------------------
+      /* ----------------------------------------
        * Parse file
        * ---------------------------------------*/
       if (ext === "csv") {
@@ -53,9 +41,10 @@ export const uploadFile = async (req, res) => {
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         rows = XLSX.utils.sheet_to_json(sheet);
       } else {
-        return res
-          .status(400)
-          .json({ success: false, error: "Unsupported file type" });
+        return res.status(400).json({
+          success: false,
+          error: "Unsupported file type",
+        });
       }
 
       if (!rows.length) {
@@ -63,8 +52,8 @@ export const uploadFile = async (req, res) => {
         continue;
       }
 
-      /** ----------------------------------------
-       * Standardize rows using global metadata
+      /* ----------------------------------------
+       * Standardize rows
        * ---------------------------------------*/
       const standardizedRows = rows.map((row) => {
         const out = {};
@@ -74,7 +63,6 @@ export const uploadFile = async (req, res) => {
           if (meta) out[meta.fieldKey] = value;
         });
 
-        // Apply defaults
         metadata.forEach((m) => {
           if (out[m.fieldKey] === undefined && m.defaultValue !== undefined) {
             out[m.fieldKey] = m.defaultValue;
@@ -84,87 +72,147 @@ export const uploadFile = async (req, res) => {
         return out;
       });
 
-      /** ----------------------------------------
-       * Validate required metadata fields
-       * ---------------------------------------*/
-      const missingRequired = metadata
-        .filter((m) => m.required)
-        .filter((m) => standardizedRows[0]?.[m.fieldKey] === undefined);
-
-      if (missingRequired.length) {
-        fs.unlinkSync(file.path);
-        return res.status(400).json({
-          success: false,
-          error: "Required fields missing",
-          missingFields: missingRequired.map((m) => m.displayName),
-        });
-      }
-
-      /** ----------------------------------------
+      /* ----------------------------------------
        * Call ML service
        * ---------------------------------------*/
-      const { data: predictions } = await axios.post(
+      const payload = {
+        students: standardizedRows.map((row) => ({
+          id: crypto.randomUUID(),
+          features: row,
+        })),
+      };
+
+      const { data } = await axios.post(
         `${process.env.ML_SERVICE_URL}/predict`,
-        { rows: standardizedRows }
+        payload
       );
 
-      /** ----------------------------------------
-       * Persist students + compute aggregations
+      const predictions = data.results;
+
+      /* ----------------------------------------
+       * Counters (response-only)
        * ---------------------------------------*/
       const riskCounters = { high: 0, medium: 0, low: 0 };
       let successCount = 0;
 
+      /* ----------------------------------------
+       * Student upsert + aggregation updates
+       * ---------------------------------------*/
       for (let i = 0; i < predictions.length; i++) {
-        const p = predictions[i];
+        const prediction = predictions[i];
+        const newRisk = prediction.risk_label.toLowerCase();
 
-        riskCounters[p.risk]++;
-        if (p.success) successCount++;
+        const rollId = standardizedRows[i].studentId || crypto.randomUUID();
 
-        await Student.create({
-          rollId: crypto.randomUUID(),
+        const existing = await Student.findOne({
+          rollId,
           instituteId: user.instituteId,
-          mentorId: user.userId,
-          riskValue: p.risk,
-          success: p.success,
-          standardizedInput: standardizedRows[i],
         });
+
+        let success = false;
+
+        if (existing) {
+          const oldRisk = existing.riskValue;
+
+          success =
+            (oldRisk === "high" || oldRisk === "medium") && newRisk === "low";
+
+          await Student.updateOne(
+            { rollId, instituteId: user.instituteId },
+            {
+              $set: {
+                previousRiskValue: oldRisk,
+                riskValue: newRisk,
+                success,
+                lastUpdatedByMentor: user.userId,
+              },
+            }
+          );
+
+          // 🔥 Adjust risk aggregations ONLY if risk changed
+          if (oldRisk !== newRisk) {
+            await Mentor.findByIdAndUpdate(user.userId, {
+              $inc: {
+                [`aggregations.risk.${oldRisk}`]: -1,
+                [`aggregations.risk.${newRisk}`]: 1,
+              },
+            });
+
+            await Admin.findOneAndUpdate(
+              { instituteId: user.instituteId },
+              {
+                $inc: {
+                  [`aggregations.risk.${oldRisk}`]: -1,
+                  [`aggregations.risk.${newRisk}`]: 1,
+                },
+              }
+            );
+
+            await SuperAdmin.updateOne(
+              {},
+              {
+                $inc: {
+                  [`aggregations.risk.${oldRisk}`]: -1,
+                  [`aggregations.risk.${newRisk}`]: 1,
+                },
+              }
+            );
+          }
+        } else {
+          // New student
+          await Student.create({
+            rollId,
+            instituteId: user.instituteId,
+            riskValue: newRisk,
+            success: false,
+            lastUpdatedByMentor: user.userId,
+          });
+
+          await Mentor.findByIdAndUpdate(user.userId, {
+            $inc: { [`aggregations.risk.${newRisk}`]: 1 },
+          });
+
+          await Admin.findOneAndUpdate(
+            { instituteId: user.instituteId },
+            {
+              $inc: { [`aggregations.risk.${newRisk}`]: 1 },
+            }
+          );
+
+          await SuperAdmin.updateOne(
+            {},
+            {
+              $inc: { [`aggregations.risk.${newRisk}`]: 1 },
+            }
+          );
+        }
+
+        riskCounters[newRisk]++;
+        if (success) successCount++;
       }
 
-      /** ----------------------------------------
-       * Update aggregations (mentor → admin → superAdmin)
+      /* ----------------------------------------
+       * Increment success counters
        * ---------------------------------------*/
-      await Mentor.findByIdAndUpdate(user.userId, {
-        $inc: {
-          "aggregations.risk.high": riskCounters.high,
-          "aggregations.risk.medium": riskCounters.medium,
-          "aggregations.risk.low": riskCounters.low,
-          "aggregations.success": successCount,
-        },
-      });
+      if (successCount > 0) {
+        await Mentor.findByIdAndUpdate(user.userId, {
+          $inc: { "aggregations.success": successCount },
+        });
 
-      await Admin.findOneAndUpdate(
-        { instituteId: user.instituteId },
-        {
-          $inc: {
-            "aggregations.risk.high": riskCounters.high,
-            "aggregations.risk.medium": riskCounters.medium,
-            "aggregations.risk.low": riskCounters.low,
-            "aggregations.success": successCount,
-          },
-        }
-      );
+        await Admin.findOneAndUpdate(
+          { instituteId: user.instituteId },
+          {
+            $inc: { "aggregations.success": successCount },
+          }
+        );
 
-      await SuperAdmin.updateOne(
-        {},
-        {
-          $inc: {
-            "aggregations.risk.high": riskCounters.high,
-            "aggregations.risk.medium": riskCounters.medium,
-            "aggregations.risk.low": riskCounters.low,
-            "aggregations.success": successCount,
-          },
-        }
-      );
+        await SuperAdmin.updateOne(
+          {},
+          {
+            $inc: { "aggregations.success": successCount },
+          }
+        );
+      }
 
       results.push({
         fileName: file.originalname,
@@ -183,8 +231,9 @@ export const uploadFile = async (req, res) => {
     });
   } catch (error) {
     console.error("Upload error:", error);
-    return res
-      .status(500)
-      .json({ success: false, error: "Internal server error" });
+    return res.status(500).json({
+      success: false,
+      error: "Internal server error",
+    });
   }
 };
