@@ -1,3 +1,16 @@
+// controllers/mentor.controller.js
+import fs from "fs";
+import csv from "csv-parser";
+import XLSX from "xlsx";
+import axios from "axios";
+import crypto from "crypto";
+
+import Metadata from "../models/metadata.model.js";
+import Student from "../models/student.model.js";
+import { Mentor, Admin, SuperAdmin } from "../models/user.model.js";
+import { normalize } from "../utils/authUtils.js";
+import { mapToMLFeatures } from "../utils/mlFeatureMapper.js";
+
 export const uploadFile = async (req, res) => {
   const { user } = req;
   const files = req.files;
@@ -78,7 +91,7 @@ export const uploadFile = async (req, res) => {
       const payload = {
         students: standardizedRows.map((row) => ({
           id: crypto.randomUUID(),
-          features: row,
+          features: mapToMLFeatures(row),
         })),
       };
 
