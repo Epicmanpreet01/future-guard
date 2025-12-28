@@ -1,0 +1,254 @@
+# FutureGuard
+
+FutureGuard is a full-stack student dropout risk prediction and intervention platform designed for educational institutions.
+It combines **robust data ingestion**, a **rule-based risk engine**, and **machine learning predictions** to identify at-risk students early and provide actionable insights to mentors and administrators.
+
+The system is built with a **role-based architecture** (SuperAdmin, Admin, Mentor), centralized metadata-driven preprocessing, and a decoupled ML microservice.
+
+---
+
+## Key Features
+
+### 1. Centralized Metadata-Driven Ingestion
+
+- No institute-specific configs or schemas
+- Single global metadata schema stored in MongoDB
+- Automatic column normalization using:
+
+  - Field keys
+  - Display names
+  - Synonyms
+  - Common naming variations
+
+- Supports CSV and Excel uploads
+- Strong validation with early failure on missing required fields
+
+### 2. Hybrid Risk Evaluation Engine
+
+- **Rule-based engine**
+
+  - Deterministic checks on attendance, CGPA, and fees status
+  - Provides transparent, human-readable reasons
+
+- **ML model (XGBoost)**
+
+  - Outputs probability of dropout
+  - Uses standardized feature vector
+
+- **Final risk = max severity of rule-based risk and ML risk**
+- Ensures reliability even when ML confidence is uncertain
+
+### 3. Role-Based Dashboards
+
+- **SuperAdmin**
+
+  - Institute-level aggregations
+  - System-wide success tracking
+
+- **Admin**
+
+  - Mentor management
+  - Institute analytics
+
+- **Mentor**
+
+  - Upload student data
+  - View high-risk students
+  - Track improvements (success cases)
+  - Detailed per-student explanations and recommendations
+
+### 4. Real-Time Aggregations
+
+- Risk counts (high / medium / low)
+- Success tracking (risk reduction over time)
+- Aggregations propagate:
+
+  - Mentor → Admin → SuperAdmin
+
+- Fully consistent across updates and re-uploads
+
+### 5. Explainable Predictions
+
+- Each prediction includes:
+
+  - ML risk bucket
+  - Rule-based risk bucket
+  - Rule reasons
+  - Recommendation text
+
+- No black-box outputs
+
+---
+
+## Architecture Overview
+
+### Backend (Node.js + Express)
+
+- File upload handling
+- Metadata normalization and validation
+- Student persistence and updates
+- Aggregation propagation
+- ML service integration
+
+### ML Service (FastAPI)
+
+- Single prediction endpoint
+- Feature preprocessing and scaling
+- XGBoost probability inference
+- Rule-based risk evaluation
+- Explanation and recommendation generation
+
+### Frontend (React + Tailwind + Recharts)
+
+- Mentor dashboard
+- Analytics modals
+- Upload history tracking
+- Interactive charts:
+
+  - Risk distribution
+  - Success vs high-risk comparison
+  - Feature-based risk breakdowns
+
+---
+
+## ML Service API
+
+### `POST /predict`
+
+#### Request
+
+```json
+{
+  "students": [
+    {
+      "id": "STU001",
+      "features": {
+        "attendancePercentage": 62,
+        "cgpa": 5.8,
+        "feesPaid": false,
+        "previousYearPerformance": 55
+      }
+    }
+  ]
+}
+```
+
+#### Response
+
+```json
+{
+  "results": [
+    {
+      "id": "STU001",
+      "risk_score": 0.73,
+      "risk_label": "high",
+      "explanation": {
+        "ml_risk": "high",
+        "rule_risk": "medium",
+        "rule_reasons": ["Fees pending", "Attendance below 60%"]
+      },
+      "recommendation": "Increase study hours and attend mentoring sessions."
+    }
+  ]
+}
+```
+
+---
+
+## Risk Logic
+
+### Rule-Based Thresholds
+
+- High risk:
+
+  - Attendance < 50%
+  - CGPA < 3
+
+- Medium risk:
+
+  - Fees pending
+  - Attendance < 60%
+  - CGPA < 6
+
+- Low risk:
+
+  - None of the above
+
+### Success Definition
+
+A student is marked as a **success** when:
+
+- Previous risk was `high` or `medium`
+- Current risk becomes `low`
+
+---
+
+## Data Privacy & Safety
+
+- No raw student files are stored
+- Only standardized, validated fields are persisted
+- Student identifiers are controlled and scoped by institute
+- ML service is stateless and isolated
+
+---
+
+## Project Status
+
+### Completed
+
+- Centralized metadata system
+- Mentor upload and normalization pipeline
+- Rule-based + ML hybrid prediction flow
+- Aggregation propagation across roles
+- Mentor dashboard and analytics
+- Upload history and success tracking
+
+### In Progress / Planned
+
+- Model retraining automation
+- Advanced explainability (SHAP/LIME)
+- Longitudinal trend analytics
+- Alerting and intervention workflows
+- Deployment hardening and CI/CD
+
+---
+
+## Tech Stack
+
+**Frontend**
+
+- React
+- Tailwind CSS
+- Recharts
+
+**Backend**
+
+- Node.js
+- Express
+- MongoDB (Mongoose)
+
+**ML Service**
+
+- FastAPI
+- XGBoost
+- Pandas
+- Scikit-learn
+- Joblib
+
+---
+
+## Why This Project Stands Out
+
+- No per-client configuration complexity
+- Deterministic + probabilistic risk fusion
+- Strong separation of concerns
+- Fully explainable predictions
+- Designed for real institutional workflows
+
+---
+
+## License
+
+MIT License
+
+---
