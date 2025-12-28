@@ -15,7 +15,7 @@ const Metadata = model(
     category: { type: String },
     useInML: { type: Boolean, default: true },
     synonyms: [{ type: String }],
-    defaultValue: Schema.Types.Mixed, // NEW
+    defaultValue: Schema.Types.Mixed,
   })
 );
 

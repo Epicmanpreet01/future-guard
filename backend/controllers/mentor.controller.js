@@ -8,9 +8,6 @@ import Student from "../models/student.model.js";
 import { Mentor, Admin, SuperAdmin } from "../models/user.model.js";
 import { mapToMLFeatures } from "../utils/mlFeatureMapper.js";
 
-/* ----------------------------------------
- * Strong normalization helpers
- * ---------------------------------------*/
 const normalizeKey = (key = "") =>
   key
     .toString()
@@ -50,16 +47,10 @@ export const uploadFile = async (req, res) => {
   try {
     const metadata = await Metadata.find({});
 
-    /* ----------------------------------------
-     * Required fields
-     * ---------------------------------------*/
     const requiredFields = metadata
       .filter((m) => m.required)
       .map((m) => m.fieldKey);
 
-    /* ----------------------------------------
-     * Build enhanced alias → metadata map
-     * ---------------------------------------*/
     const aliasMap = new Map();
 
     metadata.forEach((m) => {
@@ -87,9 +78,7 @@ export const uploadFile = async (req, res) => {
       let rows = [];
       const ext = file.originalname.split(".").pop().toLowerCase();
 
-      /* ----------------------------------------
-       * Parse file
-       * ---------------------------------------*/
+      // Parse file
       if (ext === "csv") {
         rows = await new Promise((resolve, reject) => {
           const temp = [];
@@ -115,9 +104,6 @@ export const uploadFile = async (req, res) => {
         continue;
       }
 
-      /* ----------------------------------------
-       * Standardize rows (ROBUST MAPPING)
-       * ---------------------------------------*/
       const standardizedRows = rows.map((row, index) => {
         const ml = {};
         const identity = {};
@@ -143,7 +129,6 @@ export const uploadFile = async (req, res) => {
           }
         });
 
-        // defaults for ML fields
         metadata.forEach((m) => {
           if (
             m.useInML &&
@@ -156,9 +141,7 @@ export const uploadFile = async (req, res) => {
 
         const merged = { ...ml, ...identity };
 
-        /* ----------------------------------------
-         * REQUIRED FIELD CHECK (EARLY FAIL)
-         * ---------------------------------------*/
+        // REQUIRED FIELD CHECK (EARLY FAIL)
         const missing = requiredFields.filter(
           (f) =>
             merged[f] === undefined || merged[f] === null || merged[f] === ""
@@ -173,12 +156,9 @@ export const uploadFile = async (req, res) => {
         return merged;
       });
 
-      /* ----------------------------------------
-       * Call ML service
-       * ---------------------------------------*/
       const payload = {
         students: standardizedRows.map((row) => ({
-          id: row.studentId, // ✅ REAL rollId
+          id: row.studentId,
           features: mapToMLFeatures(row),
         })),
       };
@@ -190,16 +170,10 @@ export const uploadFile = async (req, res) => {
 
       const predictions = data.results;
 
-      /* ----------------------------------------
-       * Counters
-       * ---------------------------------------*/
       const riskCounters = { high: 0, medium: 0, low: 0 };
       let successCount = 0;
       const studentsTable = [];
 
-      /* ----------------------------------------
-       * Student upsert + aggregation updates
-       * ---------------------------------------*/
       for (let i = 0; i < predictions.length; i++) {
         const prediction = predictions[i];
         const row = standardizedRows[i];
