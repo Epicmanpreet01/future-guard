@@ -2,8 +2,8 @@
 
 import numpy as np
 import pandas as pd
-import joblib
 from typing import List, Dict
+from core.model_loader import load_scaler as _load_remote_scaler
 
 CONTINUOUS_FEATURES = [
   "ageAtEnrollment",
@@ -33,10 +33,11 @@ _scaler = None
 
 
 def load_scaler():
-  global _scaler
-  if _scaler is None:
-    _scaler = joblib.load(SCALER_PATH)
-  return _scaler
+    global _scaler
+    if _scaler is None:
+        _scaler = _load_remote_scaler()
+    return _scaler
+
 
 
 def _safe_float(v, default=0.0):

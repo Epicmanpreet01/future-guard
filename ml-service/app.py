@@ -1,5 +1,4 @@
 from fastapi import FastAPI
-import pandas as pd
 import uvicorn
 
 from core.schemas import StudentBatch, PredictionResponse
@@ -8,6 +7,7 @@ from core.explainer import explain
 from core.recommender import recommend
 from core.preprocessing import preprocess
 from core.rule_engine import rule_based_risk
+from core.model_loader import load_predictor, load_scaler
 
 app = FastAPI(title="FutureGuard ML Service", version="0.1.0")
 
@@ -69,6 +69,11 @@ def predict(batch: StudentBatch):
 @app.get("/health")
 def health_check():
   return {"status": "ok"}
+
+@app.on_event("startup")
+def preload_models():
+  load_predictor()
+  load_scaler()
 
 if __name__ == '__main__':
   uvicorn.run(app, host='localhost')
