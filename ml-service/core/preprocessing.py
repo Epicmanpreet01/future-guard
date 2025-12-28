@@ -77,7 +77,6 @@ def scale_continuous(df: pd.DataFrame) -> pd.DataFrame:
 def preprocess(rows: List[Dict]) -> pd.DataFrame:
   df = pd.DataFrame(rows)
 
-  # 🚨 HARD FAIL IF BACKEND DID NOT ENGINEER FEATURES
   missing = set(MODEL_FEATURE_ORDER) - set(df.columns)
   if missing:
     raise ValueError(
