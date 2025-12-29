@@ -158,6 +158,38 @@ export default function MentorDashboard({ authUser }) {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
+          {/* Background dashed lines */}
+          <div className="pointer-events-none fixed inset-0 z-0">
+            <svg
+              className="w-full h-full"
+              xmlns="http://www.w3.org/2000/svg"
+              preserveAspectRatio="none"
+            >
+              <defs>
+                <pattern
+                  id="dashed-lines"
+                  width="200"
+                  height="200"
+                  patternUnits="userSpaceOnUse"
+                >
+                  <line
+                    x1="0"
+                    y1="200"
+                    x2="200"
+                    y2="0"
+                    stroke="#d1d5db"
+                    strokeWidth="1"
+                    strokeDasharray="6 6"
+                  />
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#dashed-lines)" />
+            </svg>
+          </div>
+
+          {/* Content layer */}
+          <div className="relative z-10">
+            
       <style>{`
         @keyframes fade-in-scale {
             0% { opacity: 0; transform: scale(0.95); }
@@ -328,6 +360,17 @@ export default function MentorDashboard({ authUser }) {
           e.target.value = ""; // reset input
         }}
       />
+      
+        {/* Spacer before footer */}
+        <div className="h-10"></div>
+        <footer className="w-full bg-white border-t border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <p className="text-center text-sm text-gray-500">
+              © 2025 FutureGuard. All rights reserved.
+            </p>
+          </div>
+        </footer>
+      </div>
     </div>
   );
 }
