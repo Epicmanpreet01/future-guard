@@ -962,7 +962,7 @@ const DepartmentsModal = ({ show, onClose, mentors }) => {
               {dept.name}
             </p>
             <div className="w-1/2 flex items-center">
-              <div className="flex-grow bg-gray-200 rounded-full h-4 mr-2">
+              <div className="grow bg-gray-200 rounded-full h-4 mr-2">
                 <div
                   className={`${
                     dept.count > 0 ? "bg-green-300" : "bg-gray-200"
