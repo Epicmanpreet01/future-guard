@@ -1,9 +1,9 @@
 # FutureGuard
 
-FutureGuard is a full-stack student dropout risk prediction and intervention platform designed for educational institutions.
-It combines **robust data ingestion**, a **rule-based risk engine**, and **machine learning predictions** to identify at-risk students early and provide actionable insights to mentors and administrators.
+FutureGuard is a full-stack **student dropout risk prediction and intervention platform** designed for educational institutions.
+It combines **centralized metadata-driven ingestion**, a **deterministic rule-based risk engine**, and **machine learning predictions** to identify at-risk students early and provide actionable, explainable insights.
 
-The system is built with a **role-based architecture** (SuperAdmin, Admin, Mentor), centralized metadata-driven preprocessing, and a decoupled ML microservice.
+The platform is built with a **role-based architecture** (SuperAdmin, Admin, Mentor), real-time aggregations, and a **decoupled ML microservice** for scalable inference.
 
 ---
 
@@ -11,72 +11,92 @@ The system is built with a **role-based architecture** (SuperAdmin, Admin, Mento
 
 ### 1. Centralized Metadata-Driven Ingestion
 
-- No institute-specific configs or schemas
+- No institute-specific schemas or per-client configuration
 - Single global metadata schema stored in MongoDB
 - Automatic column normalization using:
 
-  - Field keys
+  - Canonical field keys
   - Display names
-  - Synonyms
-  - Common naming variations
+  - Synonyms and common naming variations
 
 - Supports CSV and Excel uploads
 - Strong validation with early failure on missing required fields
 
+---
+
 ### 2. Hybrid Risk Evaluation Engine
 
-- **Rule-based engine**
+FutureGuard uses a **hybrid risk strategy** to ensure reliability and transparency:
 
-  - Deterministic checks on attendance, CGPA, and fees status
-  - Provides transparent, human-readable reasons
+#### Rule-Based Engine
 
-- **ML model (XGBoost)**
+- Deterministic checks on:
 
-  - Outputs probability of dropout
-  - Uses standardized feature vector
+  - Attendance
+  - CGPA
+  - Fees status
 
-- **Final risk = max severity of rule-based risk and ML risk**
-- Ensures reliability even when ML confidence is uncertain
+- Produces human-readable explanations
+
+#### Machine Learning Engine
+
+- XGBoost-based classifier
+- Outputs dropout probability
+- Uses a standardized feature vector
+
+**Final Risk Decision**
+
+```
+final_risk = max(rule_based_risk, ml_risk)
+```
+
+---
 
 ### 3. Role-Based Dashboards
 
-- **SuperAdmin**
+**SuperAdmin**
 
-  - Institute-level aggregations
-  - System-wide success tracking
+- System-wide aggregations
+- Cross-institute success tracking
 
-- **Admin**
+**Admin**
 
-  - Mentor management
-  - Institute analytics
+- Mentor management
+- Institute-level analytics
 
-- **Mentor**
+**Mentor**
 
-  - Upload student data
-  - View high-risk students
-  - Track improvements (success cases)
-  - Detailed per-student explanations and recommendations
+- Upload student data
+- Identify high-risk students
+- Track improvement and success cases
+- View per-student explanations and recommendations
+
+---
 
 ### 4. Real-Time Aggregations
 
-- Risk counts (high / medium / low)
+- Risk distribution (High / Medium / Low)
 - Success tracking (risk reduction over time)
-- Aggregations propagate:
+- Automatic propagation:
 
-  - Mentor → Admin → SuperAdmin
+  ```
+  Mentor → Admin → SuperAdmin
+  ```
 
-- Fully consistent across updates and re-uploads
+- Fully consistent across re-uploads and updates
+
+---
 
 ### 5. Explainable Predictions
 
-- Each prediction includes:
+Each prediction includes:
 
-  - ML risk bucket
-  - Rule-based risk bucket
-  - Rule reasons
-  - Recommendation text
+- ML risk bucket
+- Rule-based risk bucket
+- Explicit rule triggers
+- Actionable recommendations
 
-- No black-box outputs
+No black-box outputs.
 
 ---
 
@@ -92,22 +112,22 @@ The system is built with a **role-based architecture** (SuperAdmin, Admin, Mento
 
 ### ML Service (FastAPI)
 
-- Single prediction endpoint
+- Stateless inference microservice
 - Feature preprocessing and scaling
-- XGBoost probability inference
+- XGBoost probability prediction
 - Rule-based risk evaluation
 - Explanation and recommendation generation
 
 ### Frontend (React + Tailwind + Recharts)
 
 - Mentor dashboard
-- Analytics modals
+- Analytics and drill-downs
 - Upload history tracking
 - Interactive charts:
 
   - Risk distribution
   - Success vs high-risk comparison
-  - Feature-based risk breakdowns
+  - Feature-level breakdowns
 
 ---
 
@@ -159,35 +179,72 @@ The system is built with a **role-based architecture** (SuperAdmin, Admin, Mento
 
 ### Rule-Based Thresholds
 
-- High risk:
+**High Risk**
 
-  - Attendance < 50%
-  - CGPA < 3
+- Attendance < 50%
+- CGPA < 3
 
-- Medium risk:
+**Medium Risk**
 
-  - Fees pending
-  - Attendance < 60%
-  - CGPA < 6
+- Fees pending
+- Attendance < 60%
+- CGPA < 6
 
-- Low risk:
+**Low Risk**
 
-  - None of the above
+- None of the above
+
+---
 
 ### Success Definition
 
-A student is marked as a **success** when:
+A student is marked as a **success case** when:
 
-- Previous risk was `high` or `medium`
-- Current risk becomes `low`
+- Previous risk ∈ {High, Medium}
+- Current risk = Low
+
+---
+
+## Dataset Used
+
+The ML models were trained using the **UCI Machine Learning Repository dataset**:
+
+**Predict Students Dropout and Academic Success**
+[https://archive.ics.uci.edu/dataset/697/predict+students+dropout+and+academic+success](https://archive.ics.uci.edu/dataset/697/predict+students+dropout+and+academic+success)
+
+The dataset was cleaned, standardized, and mapped to FutureGuard’s unified feature schema for model training and validation.
+
+---
+
+## Model Hosting & Loading
+
+- Trained ML models are hosted on **Hugging Face**
+- The ML service dynamically loads models from this repository at runtime
+
+**Model Repository:**
+[https://huggingface.co/Epicmanpreet02/futureguard-ml-models](https://huggingface.co/Epicmanpreet02/futureguard-ml-models)
+
+---
+
+## Repository Structure & Git-Ignored Assets
+
+To keep the repository clean and secure:
+
+- Model training notebooks
+- Raw and processed datasets
+- Serialized ML models
+
+are **intentionally git-ignored**.
+
+Only inference logic, preprocessing code, and API contracts are included in this repository.
 
 ---
 
 ## Data Privacy & Safety
 
 - No raw student files are stored
-- Only standardized, validated fields are persisted
-- Student identifiers are controlled and scoped by institute
+- Only validated, standardized fields are persisted
+- Student identifiers are scoped per institute
 - ML service is stateless and isolated
 
 ---
@@ -197,19 +254,19 @@ A student is marked as a **success** when:
 ### Completed
 
 - Centralized metadata system
-- Mentor upload and normalization pipeline
-- Rule-based + ML hybrid prediction flow
-- Aggregation propagation across roles
+- Upload normalization pipeline
+- Rule-based + ML hybrid prediction
+- Aggregation propagation
 - Mentor dashboard and analytics
 - Upload history and success tracking
 
-### In Progress / Planned
+### Planned
 
-- Model retraining automation
+- Automated retraining
 - Advanced explainability (SHAP/LIME)
-- Longitudinal trend analytics
+- Longitudinal analytics
 - Alerting and intervention workflows
-- Deployment hardening and CI/CD
+- CI/CD and deployment hardening
 
 ---
 
@@ -237,19 +294,7 @@ A student is marked as a **success** when:
 
 ---
 
-## Why This Project Stands Out
-
-- No per-client configuration complexity
-- Deterministic + probabilistic risk fusion
-- Strong separation of concerns
-- Fully explainable predictions
-- Designed for real institutional workflows
-
----
-
 ## License
 
-This project is licensed under a Proprietary License.
-Unauthorized modification, redistribution, or resale is prohibited.
-
----
+This project (including associated ML models) is released under a **proprietary license**.
+See the [`LICENSE`](./LICENSE) file for full terms and conditions.
