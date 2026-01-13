@@ -192,7 +192,7 @@ export default function SuperAdminDashboard({ authUser }) {
                 <p className="text-sm font-medium text-gray-900">
                   SuperAdmin Panel
                 </p>
-                <p className="text-xs text-gray-500">Government of Rajasthan</p>
+                <p className="text-xs text-gray-500">Owner</p>
               </div>
               <button
                 onClick={handleLogout}
@@ -467,11 +467,6 @@ export default function SuperAdminDashboard({ authUser }) {
                 Quick Actions
               </h3>
               <div className="space-y-3">
-                <ActionButton
-                  icon={Settings}
-                  text="System Config"
-                  onClick={() => alert("Open system config")}
-                />
                 <ActionButton
                   icon={Download}
                   text="Export Global Reports"

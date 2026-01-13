@@ -477,7 +477,7 @@ const MentorManagementTable = ({
         />
       </div>
     </div>
-    <div className="max-h-[600px] overflow-y-auto">
+    <div className="max-h-150 overflow-y-auto">
       <table id="mentorTable" className="w-full">
         <thead className="bg-gray-50 sticky top-0 z-10">
           <tr>
@@ -962,7 +962,7 @@ const DepartmentsModal = ({ show, onClose, mentors }) => {
               {dept.name}
             </p>
             <div className="w-1/2 flex items-center">
-              <div className="flex-grow bg-gray-200 rounded-full h-4 mr-2">
+              <div className="grow bg-gray-200 rounded-full h-4 mr-2">
                 <div
                   className={`${
                     dept.count > 0 ? "bg-green-300" : "bg-gray-200"
