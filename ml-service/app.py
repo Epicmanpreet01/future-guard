@@ -10,7 +10,9 @@ from core.preprocessing import Preprocessor
 from core.predicter import Predictor
 from core.rule_engine import RuleBasedRiskEvaluator
 from core.recommender import RecommendationEngine
-from core.explainer import explain
+from core.explainer import Explainer
+from core.shap import SHAPExplainer
+
 
 
 app = FastAPI(title="FutureGuard ML Service", version="0.1.0")
@@ -23,6 +25,8 @@ class InferenceService:
     self.predictor = Predictor(self.model_loader)
     self.rule_engine = RuleBasedRiskEvaluator()
     self.recommender = RecommendationEngine()
+    self.explainer = Explainer()
+    self.shap_explainer = SHAPExplainer(self.model_loader)
 
   @staticmethod
   def risk_bucket(score: float) -> str:
@@ -41,7 +45,7 @@ class InferenceService:
     results = []
     severity = {"low": 1, "medium": 2, "high": 3}
 
-    for student, score in zip(batch.students, risk_scores):
+    for idx, (student, score) in enumerate(zip(batch.students, risk_scores)):
       ml_risk = self.risk_bucket(score)
 
       rule_result = self.rule_engine.evaluate(student.features)
@@ -53,17 +57,22 @@ class InferenceService:
         else ml_risk
       )
 
-      explanation = explain(
+      row_df = model_df.iloc[[idx]]
+      shap_summary = self.shap_explainer.top_contributors(row_df)
+
+      explanation = self.explainer.explain(
         student.features,
         rule_result,
         ml_risk,
-        score
+        score,
+        shap_summary
       )
 
       recommendation = self.recommender.recommend(
         score,
         final_risk,
-        student.features
+        student.features,
+        shap_summary
       )
 
       results.append({
@@ -94,6 +103,7 @@ def health_check():
 def preload_models():
   service.model_loader.load_predictor()
   service.model_loader.load_scaler()
+  service.shap_explainer.explainer
 
 
 if __name__ == "__main__":

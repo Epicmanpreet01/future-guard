@@ -53,6 +53,8 @@ const mapApiStudentToUI = (s) => ({
 
   explanation: s.explanation,
   recommendation: s.recommendation,
+
+  topMLFactors: s.topMLFactors || s.explanation?.top_ml_factors || [],
 });
 
 export default function MentorDashboard({ authUser }) {
@@ -76,7 +78,7 @@ export default function MentorDashboard({ authUser }) {
 
   const students = useMemo(
     () => uploadedStudents.map(mapApiStudentToUI),
-    [uploadedStudents]
+    [uploadedStudents],
   );
 
   const [showAllStudentsModal, setShowAllStudentsModal] = useState(false);
@@ -97,8 +99,8 @@ export default function MentorDashboard({ authUser }) {
     ? Math.round(
         uploadedStudents.reduce(
           (sum, s) => sum + Number(s.features?.attendancePercentage || 0),
-          0
-        ) / uploadedStudents.length
+          0,
+        ) / uploadedStudents.length,
       )
     : null;
 
@@ -132,7 +134,7 @@ export default function MentorDashboard({ authUser }) {
         color: riskColors.High,
       },
     ],
-    [aggregations]
+    [aggregations],
   );
 
   const successVsRiskData = useMemo(() => {
@@ -158,209 +160,208 @@ export default function MentorDashboard({ authUser }) {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
-          {/* Background dashed lines */}
-          <div className="pointer-events-none fixed inset-0 z-0">
-            <svg
-              className="w-full h-full"
-              xmlns="http://www.w3.org/2000/svg"
-              preserveAspectRatio="none"
+      {/* Background dashed lines */}
+      <div className="pointer-events-none fixed inset-0 z-0">
+        <svg
+          className="w-full h-full"
+          xmlns="http://www.w3.org/2000/svg"
+          preserveAspectRatio="none"
+        >
+          <defs>
+            <pattern
+              id="dashed-lines"
+              width="200"
+              height="200"
+              patternUnits="userSpaceOnUse"
             >
-              <defs>
-                <pattern
-                  id="dashed-lines"
-                  width="200"
-                  height="200"
-                  patternUnits="userSpaceOnUse"
-                >
-                  <line
-                    x1="0"
-                    y1="200"
-                    x2="200"
-                    y2="0"
-                    stroke="#d1d5db"
-                    strokeWidth="1"
-                    strokeDasharray="6 6"
-                  />
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#dashed-lines)" />
-            </svg>
-          </div>
+              <line
+                x1="0"
+                y1="200"
+                x2="200"
+                y2="0"
+                stroke="#d1d5db"
+                strokeWidth="1"
+                strokeDasharray="6 6"
+              />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#dashed-lines)" />
+        </svg>
+      </div>
 
-          {/* Content layer */}
-          <div className="relative z-10">
-            
-      <style>{`
+      {/* Content layer */}
+      <div className="relative z-10">
+        <style>{`
         @keyframes fade-in-scale {
             0% { opacity: 0; transform: scale(0.95); }
             100% { opacity: 1; transform: scale(1); }
         }
         .animate-fade-in-scale { animation: fade-in-scale 0.2s ease-out forwards; }
     `}</style>
-      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-amber-500 to-orange-500 rounded-lg">
-                <User className="w-6 h-6 text-white" />
+        <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-amber-500 to-orange-500 rounded-lg">
+                  <User className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-gray-900">
+                    Mentor Dashboard
+                  </h1>
+                  <p className="text-sm text-gray-500">
+                    Welcome, {authUser?.name}
+                  </p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">
-                  Mentor Dashboard
-                </h1>
-                <p className="text-sm text-gray-500">
-                  Welcome, {authUser?.name}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => logoutMutate()}
-                disabled={logoutPending}
-                className="flex items-center px-4 py-2 text-sm font-medium text-red-700 bg-red-100 border border-red-200 rounded-lg hover:bg-red-200 transition-colors"
-                title="Log Out"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Log Out
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <StatCard
-            icon={Users}
-            title="Total Students"
-            value={stats.totalStudents}
-            color="text-amber-500"
-          />
-          <StatCard
-            icon={AlertTriangle}
-            title="High-Risk Students"
-            value={stats.highRiskStudents}
-            color="text-red-500"
-          />
-          <StatCard
-            icon={CheckCircle2}
-            title="Avg. Attendance"
-            value={`${stats.avgAttendance}%`}
-            color="text-green-500"
-          />
-          <StatCard
-            icon={FileText}
-            title="Fees Pending"
-            value={stats.feesPending}
-            color="text-orange-500"
-          />
-        </section>
-
-        <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">
-                High-Risk Student Management
-              </h2>
-            </div>
-            <div className="flex-grow overflow-y-auto max-h-[600px]">
-              <StudentTable students={highRiskStudents} />
-            </div>
-          </div>
-
-          <aside className="space-y-8">
-            <QuickActions
-              onShowAllStudents={() => setShowAllStudentsModal(true)}
-              onShowAnalytics={() => setShowAnalyticsModal(true)}
-              onImportStudents={() => {
-                if (!uploadPending) fileInputRef.current?.click();
-              }}
-              uploadPending={uploadPending}
-            />
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Risk Distribution
-              </h3>
-              <ResponsiveContainer width="100%" height={200}>
-                <PieChart>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "white",
-                      borderRadius: "0.5rem",
-                      borderColor: "#e5e7eb",
-                    }}
-                  />
-                  <Pie
-                    data={riskChartData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={80}
-                    paddingAngle={3}
-                    labelLine={false}
-                  >
-                    {riskChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Legend iconType="circle" />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Success vs High-Risk Students
-              </h3>
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart
-                  data={successVsRiskData}
-                  margin={{ top: 10, right: 20, left: -10, bottom: 5 }}
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => logoutMutate()}
+                  disabled={logoutPending}
+                  className="flex items-center px-4 py-2 text-sm font-medium text-red-700 bg-red-100 border border-red-200 rounded-lg hover:bg-red-200 transition-colors"
+                  title="Log Out"
                 >
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" tickLine={false} axisLine={false} />
-                  <YAxis allowDecimals={false} />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="Success" stackId="a" fill="#22c55e" />
-                  <Bar dataKey="High Risk" stackId="a" fill="#ef4444" />
-                </BarChart>
-              </ResponsiveContainer>
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Log Out
+                </button>
+              </div>
             </div>
-          </aside>
-        </section>
-      </main>
+          </div>
+        </header>
 
-      {showAllStudentsModal && (
-        <AllStudentsModal
-          students={students}
-          onClose={() => setShowAllStudentsModal(false)}
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <StatCard
+              icon={Users}
+              title="Total Students"
+              value={stats.totalStudents}
+              color="text-amber-500"
+            />
+            <StatCard
+              icon={AlertTriangle}
+              title="High-Risk Students"
+              value={stats.highRiskStudents}
+              color="text-red-500"
+            />
+            <StatCard
+              icon={CheckCircle2}
+              title="Avg. Attendance"
+              value={`${stats.avgAttendance}%`}
+              color="text-green-500"
+            />
+            <StatCard
+              icon={FileText}
+              title="Fees Pending"
+              value={stats.feesPending}
+              color="text-orange-500"
+            />
+          </section>
+
+          <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  High-Risk Student Management
+                </h2>
+              </div>
+              <div className="flex-grow overflow-y-auto max-h-[600px]">
+                <StudentTable students={highRiskStudents} />
+              </div>
+            </div>
+
+            <aside className="space-y-8">
+              <QuickActions
+                onShowAllStudents={() => setShowAllStudentsModal(true)}
+                onShowAnalytics={() => setShowAnalyticsModal(true)}
+                onImportStudents={() => {
+                  if (!uploadPending) fileInputRef.current?.click();
+                }}
+                uploadPending={uploadPending}
+              />
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Risk Distribution
+                </h3>
+                <ResponsiveContainer width="100%" height={200}>
+                  <PieChart>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "white",
+                        borderRadius: "0.5rem",
+                        borderColor: "#e5e7eb",
+                      }}
+                    />
+                    <Pie
+                      data={riskChartData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={80}
+                      paddingAngle={3}
+                      labelLine={false}
+                    >
+                      {riskChartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Legend iconType="circle" />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Success vs High-Risk Students
+                </h3>
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart
+                    data={successVsRiskData}
+                    margin={{ top: 10, right: 20, left: -10, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="name" tickLine={false} axisLine={false} />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="Success" stackId="a" fill="#22c55e" />
+                    <Bar dataKey="High Risk" stackId="a" fill="#ef4444" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </aside>
+          </section>
+        </main>
+
+        {showAllStudentsModal && (
+          <AllStudentsModal
+            students={students}
+            onClose={() => setShowAllStudentsModal(false)}
+          />
+        )}
+        {showAnalyticsModal && (
+          <AnalyticsModal
+            students={students}
+            onClose={() => setShowAnalyticsModal(false)}
+            authUser={authUser}
+          />
+        )}
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept=".csv,.xlsx,.xls"
+          hidden
+          onChange={(e) => {
+            const files = Array.from(e.target.files || []);
+            if (!files.length) return;
+
+            uploadStudents(files);
+            e.target.value = ""; // reset input
+          }}
         />
-      )}
-      {showAnalyticsModal && (
-        <AnalyticsModal
-          students={students}
-          onClose={() => setShowAnalyticsModal(false)}
-          authUser={authUser}
-        />
-      )}
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        multiple
-        accept=".csv,.xlsx,.xls"
-        hidden
-        onChange={(e) => {
-          const files = Array.from(e.target.files || []);
-          if (!files.length) return;
-
-          uploadStudents(files);
-          e.target.value = ""; // reset input
-        }}
-      />
-      
         {/* Spacer before footer */}
         <div className="h-10"></div>
         <footer className="w-full bg-white border-t border-gray-200">
@@ -477,7 +478,7 @@ const StudentTable = ({ students, isModal = false }) => {
       High: "bg-red-100 text-red-700",
       Medium: "bg-amber-100 text-amber-700",
       Low: "bg-green-100 text-green-700",
-    }[risk] || "bg-gray-100 text-gray-700");
+    })[risk] || "bg-gray-100 text-gray-700";
 
   return (
     <>
@@ -520,7 +521,7 @@ const StudentTable = ({ students, isModal = false }) => {
                 <td className="px-6 py-4 text-center">
                   <span
                     className={`inline-flex px-2.5 py-1 text-xs font-semibold rounded-full ${getRiskClass(
-                      student.risk
+                      student.risk,
                     )}`}
                   >
                     {student.risk}
@@ -722,7 +723,7 @@ const AllStudentsModal = ({ students, onClose }) => {
 const AnalyticsModal = ({ students, onClose, authUser }) => {
   const riskData = useMemo(
     () => students.map((s) => ({ gpa: s.gpa, risk: riskToNumber[s.risk] })),
-    [students]
+    [students],
   );
 
   const feesRiskData = useMemo(() => {
@@ -867,7 +868,7 @@ const AnalyticsModal = ({ students, onClose, authUser }) => {
                     {[...authUser.uploadHistory]
                       .sort(
                         (a, b) =>
-                          new Date(b.uploadedAt) - new Date(a.uploadedAt)
+                          new Date(b.uploadedAt) - new Date(a.uploadedAt),
                       )
                       .map((u) => (
                         <UploadItem
@@ -910,6 +911,9 @@ const UploadItem = ({ fileName, date, count }) => (
 
 const StudentProfileModal = ({ student, onClose }) => {
   if (!student) return null;
+
+  const topMLFactors = student.topMLFactors || [];
+
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50"
@@ -930,7 +934,9 @@ const StudentProfileModal = ({ student, onClose }) => {
             <X className="w-6 h-6" />
           </button>
         </div>
+
         <div className="space-y-4">
+          {/* Header */}
           <div className="flex items-center space-x-4">
             <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center text-amber-500 text-2xl font-bold">
               {student.name.charAt(0)}
@@ -942,6 +948,8 @@ const StudentProfileModal = ({ student, onClose }) => {
               <p className="text-sm text-gray-500">{student.id}</p>
             </div>
           </div>
+
+          {/* Stats */}
           <div className="grid grid-cols-2 gap-4 border-t pt-4">
             <InfoItem label="Risk Level" value={student.risk} />
             <InfoItem label="Attendance" value={`${student.attendance}%`} />
@@ -952,18 +960,40 @@ const StudentProfileModal = ({ student, onClose }) => {
             <InfoItem label="Last Contacted" value={student.lastContacted} />
             <InfoItem label="Current GPA" value={student.gpa} />
           </div>
+
           <div className="border-t pt-4">
             <h5 className="text-sm font-bold text-gray-700 mb-2">
               Mentor Notes
             </h5>
-            <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
-              <strong>Risk Reason:</strong>{" "}
-              {student.explanation?.rule_reasons?.join(", ") ||
-                "No explanation available"}
-              <br />
-              <strong>Recommendation:</strong>{" "}
-              {student.recommendation || "No recommendation available"}
-            </p>
+            <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md space-y-2">
+              <div>
+                <strong>Reasons:</strong>{" "}
+                {student.explanation?.rule_reasons?.length
+                  ? student.explanation.rule_reasons.join(", ")
+                  : "No major rule-based risks detected"}
+              </div>
+
+              {topMLFactors.length > 0 && (
+                <div>
+                  <strong>Top Risk Drivers (ML):</strong>
+                  <ul className="list-disc ml-5 mt-1">
+                    {topMLFactors.slice(0, 3).map((f) => (
+                      <li key={f.feature}>
+                        {f.feature.replace(/([A-Z])/g, " $1")}{" "}
+                        <span className="text-xs text-gray-500">
+                          ({f.direction})
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div>
+                <strong>Recommendation:</strong>{" "}
+                {student.recommendation || "No recommendation available"}
+              </div>
+            </div>
           </div>
         </div>
       </div>

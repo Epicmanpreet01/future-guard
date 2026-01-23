@@ -144,12 +144,12 @@ export const uploadFile = async (req, res) => {
         // REQUIRED FIELD CHECK (EARLY FAIL)
         const missing = requiredFields.filter(
           (f) =>
-            merged[f] === undefined || merged[f] === null || merged[f] === ""
+            merged[f] === undefined || merged[f] === null || merged[f] === "",
         );
 
         if (missing.length > 0) {
           throw new Error(
-            `Row ${index + 1} is missing required fields: ${missing.join(", ")}`
+            `Row ${index + 1} is missing required fields: ${missing.join(", ")}`,
           );
         }
 
@@ -165,7 +165,7 @@ export const uploadFile = async (req, res) => {
 
       const { data } = await axios.post(
         `${process.env.ML_SERVICE_URL}/predict`,
-        payload
+        payload,
       );
 
       const predictions = data.results;
@@ -201,7 +201,7 @@ export const uploadFile = async (req, res) => {
                 success,
                 lastUpdatedByMentor: user.userId,
               },
-            }
+            },
           );
 
           if (
@@ -221,7 +221,7 @@ export const uploadFile = async (req, res) => {
                   [`aggregations.risk.${oldRisk}`]: -1,
                   [`aggregations.risk.${newRisk}`]: 1,
                 },
-              }
+              },
             );
             await SuperAdmin.updateOne(
               {},
@@ -230,7 +230,7 @@ export const uploadFile = async (req, res) => {
                   [`aggregations.risk.${oldRisk}`]: -1,
                   [`aggregations.risk.${newRisk}`]: 1,
                 },
-              }
+              },
             );
           }
         } else {
@@ -247,18 +247,20 @@ export const uploadFile = async (req, res) => {
           });
           await Admin.findOneAndUpdate(
             { instituteId: user.instituteId },
-            { $inc: { [`aggregations.risk.${newRisk}`]: 1 } }
+            { $inc: { [`aggregations.risk.${newRisk}`]: 1 } },
           );
           await SuperAdmin.updateOne(
             {},
             {
               $inc: { [`aggregations.risk.${newRisk}`]: 1 },
-            }
+            },
           );
         }
 
         riskCounters[newRisk]++;
         if (success) successCount++;
+
+        const { explanation = {} } = prediction;
 
         studentsTable.push({
           rollId,
@@ -266,8 +268,13 @@ export const uploadFile = async (req, res) => {
           riskLabel: newRisk,
           riskScore: prediction.risk_score,
           success,
-          explanation: prediction.explanation,
+          explanation,
           recommendation: prediction.recommendation,
+          topMLFactors: explanation.top_ml_factors || [],
+          primaryRiskDrivers: (explanation.top_ml_factors || [])
+            .filter((f) => f.direction === "increases risk")
+            .map((f) => f.feature),
+
           features: row,
         });
       }
@@ -278,13 +285,13 @@ export const uploadFile = async (req, res) => {
         });
         await Admin.findOneAndUpdate(
           { instituteId: user.instituteId },
-          { $inc: { "aggregations.success": successCount } }
+          { $inc: { "aggregations.success": successCount } },
         );
         await SuperAdmin.updateOne(
           {},
           {
             $inc: { "aggregations.success": successCount },
-          }
+          },
         );
       }
 
