@@ -1,90 +1,63 @@
-# core/preprocessing.py
-
-import numpy as np
 import pandas as pd
-from typing import List, Dict
-from core.model_loader import load_scaler as _load_remote_scaler
+from typing import List, Dict, Any, Optional
 
-CONTINUOUS_FEATURES = [
-  "ageAtEnrollment",
-  "totalCreditsEnrolled",
-  "totalCreditsApproved",
-  "cgpa",
-]
-
-CATEGORICAL_FEATURES = [
-  "studyMode",
-  "previousEducation",
-  "displacedStatus",
-  "specialNeeds",
-  "gender",
-  "scholarShipStatus",
-  "international",
-  "parentEducation",
-  "parentEmployentStatus",
-  "feesPaid",
-]
-
-MODEL_FEATURE_ORDER = CATEGORICAL_FEATURES + CONTINUOUS_FEATURES
-
-SCALER_PATH = "models/scalar/scaler.joblib"
-
-_scaler = None
+from core.config import CONTINUOUS_FEATURES, MODEL_FEATURE_ORDER
+from core.model_loader import ModelLoader
 
 
-def load_scaler():
-    global _scaler
-    if _scaler is None:
-        _scaler = _load_remote_scaler()
-    return _scaler
+class Preprocessor:
+  def __init__(self, model_loader: Optional[ModelLoader] = None):
+    self.model_loader = model_loader or ModelLoader()
+    self._scaler = None
 
+  @staticmethod
+  def _safe_float(value: Any, default: float = 0.0) -> float:
+    try:
+      return float(value)
+    except Exception:
+      return default
 
+  @staticmethod
+  def _safe_int(value: Any, default: int = 0) -> int:
+    try:
+      return int(value)
+    except Exception:
+      return default
 
-def _safe_float(v, default=0.0):
-  try:
-    return float(v)
-  except Exception:
-    return default
+  def load_scaler(self):
+    if self._scaler is None:
+      self._scaler = self.model_loader.load_scaler()
+    return self._scaler
 
+  def engineer_features(self, df: pd.DataFrame) -> pd.DataFrame:
+    df["ageAtEnrollment"] = df["ageAtEnrollment"].apply(self._safe_int)
+    df["totalCreditsEnrolled"] = df["totalCreditsEnrolled"].apply(self._safe_float)
+    df["totalCreditsApproved"] = df["totalCreditsApproved"].apply(self._safe_float)
+    df["cgpa"] = df["cgpa"].apply(self._safe_float)
 
-def _safe_int(v, default=0):
-  try:
-    return int(v)
-  except Exception:
-    return default
+    df["notEnrolled"] = (df["totalCreditsEnrolled"] == 0).astype(int)
 
+    df["cgpa"] = df["cgpa"].clip(0, 10)
+    df["totalCreditsEnrolled"] = df["totalCreditsEnrolled"].clip(0, 200)
+    df["totalCreditsApproved"] = df["totalCreditsApproved"].clip(0, 300)
 
-def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
-  df["ageAtEnrollment"] = df["ageAtEnrollment"].apply(_safe_int)
-  df["totalCreditsEnrolled"] = df["totalCreditsEnrolled"].apply(_safe_float)
-  df["totalCreditsApproved"] = df["totalCreditsApproved"].apply(_safe_float)
-  df["cgpa"] = df["cgpa"].apply(_safe_float)
+    return df
 
-  df["notEnrolled"] = (df["totalCreditsEnrolled"] == 0).astype(int)
+  def scale_continuous(self, df: pd.DataFrame) -> pd.DataFrame:
+    scaler = self.load_scaler()
+    df[CONTINUOUS_FEATURES] = scaler.transform(df[CONTINUOUS_FEATURES])
+    return df
 
-  df["cgpa"] = df["cgpa"].clip(0, 10)
-  df["totalCreditsEnrolled"] = df["totalCreditsEnrolled"].clip(0, 200)
-  df["totalCreditsApproved"] = df["totalCreditsApproved"].clip(0, 300)
+  def preprocess(self, rows: List[Dict]) -> pd.DataFrame:
+    df = pd.DataFrame(rows)
 
-  return df
+    missing = set(MODEL_FEATURE_ORDER) - set(df.columns)
+    if missing:
+      raise ValueError(
+        f"Missing required ML features: {sorted(missing)}"
+      )
 
+    df = self.engineer_features(df)
+    df = self.scale_continuous(df)
 
-def scale_continuous(df: pd.DataFrame) -> pd.DataFrame:
-  scaler = load_scaler()
-  df[CONTINUOUS_FEATURES] = scaler.transform(df[CONTINUOUS_FEATURES])
-  return df
-
-
-def preprocess(rows: List[Dict]) -> pd.DataFrame:
-  df = pd.DataFrame(rows)
-
-  missing = set(MODEL_FEATURE_ORDER) - set(df.columns)
-  if missing:
-    raise ValueError(
-      f"Missing required ML features: {sorted(missing)}"
-    )
-
-  df = engineer_features(df)
-  df = scale_continuous(df)
-
-  return df[MODEL_FEATURE_ORDER]
+    return df[MODEL_FEATURE_ORDER]
