@@ -1,0 +1,22 @@
+name: Keep Render Services Warm
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  keep-warm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping backend service (health)
+        run: |
+          curl -fsS --max-time 10 https://future-guard-backend.onrender.com || true
+
+      - name: Ping ML service (health)
+        run: |
+          curl -fsS --max-time 10 https://future-guard-ml-service.onrender.com/health || true
+
+      - name: Ping frontend
+        run: |
+          curl -fsS --max-time 10 https://future-guard.onrender.com || true

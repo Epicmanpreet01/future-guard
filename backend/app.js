@@ -29,8 +29,6 @@ app.use("/api/aggregation", aggregationRoutes);
 app.use("/api/metadata", metadataRoutes);
 app.use("/api/mentor", mentorRoutes);
 
-console.log(process.env.ML_SERVICE_URL);
-
 app.use((err, _req, res, _next) => {
   console.error("Unhandled error:", err);
   res.status(500).json({ success: false, error: "Internal server error" });
