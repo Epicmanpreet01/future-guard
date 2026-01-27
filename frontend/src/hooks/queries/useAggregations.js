@@ -1,19 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
+import { api } from "../../lib/api";
 
 const useAggregationsQuery = ({ role }) => {
   return useQuery({
     queryKey: ["aggregations"],
     queryFn: async () => {
       try {
-        const res = await axios.get(`/api/aggregation/${role}/stats`);
+        const res = await api.get(`/api/aggregation/${role}/stats`);
         const data = res?.data;
         if (res?.status !== 200)
           throw new Error(data?.error || "Failed to fetch aggregations");
         return data.data;
       } catch (error) {
         console.error(
-          `Error occured while fetching aggregations for role: ${role}, error: ${error}`
+          `Error occured while fetching aggregations for role: ${role}, error: ${error}`,
         );
         return {};
       }

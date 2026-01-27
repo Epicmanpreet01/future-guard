@@ -1,13 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
 import { toast } from "react-toastify";
+import { api } from "../../lib/api";
 
 export const useAddinstituteMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ name, email, instituteName, password }) => {
       try {
-        const res = await axios.post("/api/auth/admin-register", {
+        const res = await api.post("/api/auth/admin-register", {
           name,
           email,
           instituteName,
@@ -39,7 +39,7 @@ export const useRemoveInstituteMutation = () => {
   return useMutation({
     mutationFn: async ({ instituteId }) => {
       try {
-        const res = await axios.delete(`/api/institute/${instituteId}`);
+        const res = await api.delete(`/api/institute/${instituteId}`);
         const data = res?.data;
         if (res?.status !== 200)
           throw new Error(data?.error || "Failed to remove institute");

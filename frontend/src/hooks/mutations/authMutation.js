@@ -1,13 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
 import { toast } from "react-toastify";
+import { api } from "../../lib/api";
 
 export const useLoginMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ email, password }) => {
       try {
-        const res = await axios.post("/api/auth/login", { email, password });
+        const res = await api.post("/api/auth/login", { email, password });
         const data = res.data;
         if (!data) throw new Error("Data not found");
         return data;
@@ -33,7 +33,7 @@ export const useLogoutMutation = () => {
   return useMutation({
     mutationFn: async () => {
       try {
-        const res = await axios.post("/api/auth/logout");
+        const res = await api.post("/api/auth/logout");
 
         if (res.status !== 200) {
           throw new Error("Logout failed");
@@ -41,7 +41,7 @@ export const useLogoutMutation = () => {
         return res.data;
       } catch (error) {
         throw new Error(
-          error.response?.data?.message || "An error occurred during logout."
+          error.response?.data?.message || "An error occurred during logout.",
         );
       }
     },

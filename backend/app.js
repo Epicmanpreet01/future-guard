@@ -19,7 +19,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 app.get("/", (_req, res) =>
-  res.status(200).json({ message: "API is running..." })
+  res.status(200).json({ message: "API is running..." }),
 );
 
 app.use("/api/auth", authRoutes);
@@ -28,6 +28,8 @@ app.use("/api/institute", instituteRoutes);
 app.use("/api/aggregation", aggregationRoutes);
 app.use("/api/metadata", metadataRoutes);
 app.use("/api/mentor", mentorRoutes);
+
+console.log(process.env.ML_SERVICE_URL);
 
 app.use((err, _req, res, _next) => {
   console.error("Unhandled error:", err);

@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
+import { api } from "../../lib/api";
 
 export const useMentorsQuery = () => {
   return useQuery({
     queryKey: ["mentors"],
     queryFn: async () => {
       try {
-        const res = await axios.get("/api/user/mentor");
+        const res = await api.get("/api/user/mentor");
         const data = res?.data;
         if (res?.status !== 200)
           throw new Error(data?.error || "Failed to fetch mentors");
@@ -24,7 +24,7 @@ export const useMentorQuery = (mentorId) => {
     queryKey: ["mentor", mentorId],
     queryFn: async () => {
       try {
-        const res = await axios.get(`/api/user/mentor/${mentorId}`);
+        const res = await api.get(`/api/user/mentor/${mentorId}`);
         const data = res?.data;
         if (res?.status !== 200)
           throw new Error(data?.error || "Failed to fetch mentor");

@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
+import { api } from "../../lib/api";
 
 export const useAdminsQuery = () => {
   return useQuery({
     queryKey: ["admins"],
     queryFn: async () => {
       try {
-        const res = await axios.get("/api/user/admin");
+        const res = await api.get("/api/user/admin");
         const data = res?.data;
         if (res?.status !== 200)
           throw new Error(data?.error || "Failed to fetch admins");
@@ -24,7 +24,7 @@ export const useAdminQuery = (adminId) => {
     queryKey: ["admin", adminId],
     queryFn: async () => {
       try {
-        const res = await axios.get(`/api/user/admin/${adminId}`);
+        const res = await api.get(`/api/user/admin/${adminId}`);
         const data = res?.data;
         if (res?.status !== 200)
           throw new Error(data?.error || "Failed to fetch admin");

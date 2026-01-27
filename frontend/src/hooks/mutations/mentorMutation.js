@@ -1,13 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
 import { toast } from "react-toastify";
+import { api } from "../../lib/api";
 
 export const useAddMentorMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ name, email, department, password }) => {
       try {
-        const res = await axios.post("/api/auth/mentor-register", {
+        const res = await api.post("/api/auth/mentor-register", {
           name,
           email,
           department,
@@ -38,7 +38,7 @@ export const useUpdateMentorMutation = () => {
   return useMutation({
     mutationFn: async ({ department, status, mentorId }) => {
       try {
-        const res = await axios.post(`/api/user/mentor/${mentorId}`, {
+        const res = await api.post(`/api/user/mentor/${mentorId}`, {
           department,
           status,
         });
@@ -64,7 +64,7 @@ export const useRemoveMentorMutation = () => {
   return useMutation({
     mutationFn: async ({ mentorId }) => {
       try {
-        const res = await axios.delete(`/api/user/mentor/${mentorId}`);
+        const res = await api.delete(`/api/user/mentor/${mentorId}`);
         const data = res?.data;
         if (res?.status !== 200)
           throw new Error(data?.error || "Failed to remove mentor");

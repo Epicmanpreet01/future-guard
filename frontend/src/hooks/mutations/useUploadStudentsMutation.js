@@ -1,8 +1,8 @@
 import { useMutation } from "@tanstack/react-query";
-import axios from "axios";
 import { toast } from "react-toastify";
 import { useSetUploadedStudents } from "../queries/useUploadStudents";
 import { useQueryClient } from "@tanstack/react-query";
+import { api } from "../../lib/api";
 
 export const useUploadStudentsMutation = () => {
   const setStudents = useSetUploadedStudents();
@@ -13,7 +13,7 @@ export const useUploadStudentsMutation = () => {
       const formData = new FormData();
       files.forEach((f) => formData.append("files", f));
 
-      const res = await axios.post("/api/mentor/upload", formData, {
+      const res = await api.post("/api/mentor/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 

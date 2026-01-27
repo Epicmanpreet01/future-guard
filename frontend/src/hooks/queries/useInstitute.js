@@ -1,16 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
+import { api } from "../../lib/api";
 
 export const useInstitutesQuery = () => {
   return useQuery({
     queryKey: ["institutes"],
     queryFn: async () => {
       try {
-        const res = await axios.get("/api/institute");
+        const res = await api.get("/api/institute");
         const data = res?.data;
         if (res?.status !== 200) {
           throw new Error(
-            data?.error || "Error occured while fetching institutes"
+            data?.error || "Error occured while fetching institutes",
           );
         }
         return data.data;
@@ -27,10 +27,10 @@ export const useInstituteQuery = (instituteId, role) => {
     queryKey: ["institute", instituteId],
     queryFn: async () => {
       try {
-        const res = await axios.get(
+        const res = await api.get(
           role === "superAdmin"
             ? `/api/institute/${instituteId}`
-            : `/api/institute/current/my`
+            : `/api/institute/current/my`,
         );
         const data = res?.data;
         if (res?.status !== 200)
