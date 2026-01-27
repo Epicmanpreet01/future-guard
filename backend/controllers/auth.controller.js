@@ -131,7 +131,7 @@ export const logout = async (req, res) => {
   res.clearCookie("token", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: "none",
     maxAge: 24 * 60 * 60 * 1000,
   });
 
@@ -212,7 +212,7 @@ export const registerInstituteWithAdmin = async (req, res) => {
           },
         },
       ],
-      { session }
+      { session },
     );
 
     const [institute] = await Institute.create(
@@ -222,7 +222,7 @@ export const registerInstituteWithAdmin = async (req, res) => {
           adminId: admin._id,
         },
       ],
-      { session }
+      { session },
     );
 
     await SuperAdmin.findByIdAndUpdate(
@@ -232,7 +232,7 @@ export const registerInstituteWithAdmin = async (req, res) => {
           "aggregations.institute.active": 1,
         },
       },
-      { session }
+      { session },
     );
 
     admin.instituteId = institute._id;
@@ -302,7 +302,7 @@ export const registerMentor = async (req, res) => {
           },
         },
       ],
-      { session }
+      { session },
     );
 
     await Admin.findByIdAndUpdate(
@@ -312,7 +312,7 @@ export const registerMentor = async (req, res) => {
           "aggregations.mentor.active": 1,
         },
       },
-      { session }
+      { session },
     );
 
     await user.save({ session });
