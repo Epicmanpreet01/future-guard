@@ -5,7 +5,7 @@ export const validateEmail = (email) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
 export const validatePassword = (password) =>
   /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}/.test(
-    password
+    password,
   );
 
 export const comparePasswords = (password, hash) =>
@@ -19,7 +19,7 @@ export const signAndSetToken = (res, payload) => {
   res.cookie("token", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: "none",
     maxAge: 24 * 60 * 60 * 1000,
   });
 };
