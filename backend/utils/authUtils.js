@@ -18,7 +18,7 @@ export const signAndSetToken = (res, payload) => {
   });
   res.cookie("token", token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: process.env.MODE === "production",
     sameSite: "none",
     maxAge: 24 * 60 * 60 * 1000,
   });
