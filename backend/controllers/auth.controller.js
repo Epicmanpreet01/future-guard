@@ -130,7 +130,7 @@ export const registerSuperAdmin = async (req, res) => {
 export const logout = async (req, res) => {
   res.clearCookie("token", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: process.env.MODE === "production",
     sameSite: "none",
     maxAge: 24 * 60 * 60 * 1000,
   });
