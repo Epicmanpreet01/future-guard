@@ -1,9 +1,16 @@
 # FutureGuard
 
 FutureGuard is a full-stack **student dropout risk prediction and intervention platform** designed for educational institutions.
-It combines **centralized metadata-driven ingestion**, a **deterministic rule-based risk engine**, and **machine learning predictions** to identify at-risk students early and provide actionable, explainable insights.
+It combines **centralized metadata-driven ingestion**, a **deterministic rule-based risk engine**, **machine learning predictions**, and **model explainability (SHAP)** to identify at-risk students early and provide **transparent, actionable insights**.
 
 The platform is built with a **role-based architecture** (SuperAdmin, Admin, Mentor), real-time aggregations, and a **decoupled ML microservice** for scalable inference.
+The entire system is **production-deployed on Render**.
+
+---
+
+## Live Deployment
+
+**Application URL:** https://future-guard.onrender.com
 
 ---
 
@@ -11,38 +18,38 @@ The platform is built with a **role-based architecture** (SuperAdmin, Admin, Men
 
 ### 1. Centralized Metadata-Driven Ingestion
 
-- No institute-specific schemas or per-client configuration
-- Single global metadata schema stored in MongoDB
-- Automatic column normalization using:
+* No institute-specific schemas or per-client configuration
+* Single global metadata schema stored in MongoDB
+* Automatic column normalization using:
 
-  - Canonical field keys
-  - Display names
-  - Synonyms and common naming variations
-
-- Supports CSV and Excel uploads
-- Strong validation with early failure on missing required fields
+  * Canonical field keys
+  * Display names
+  * Synonyms and common naming variations
+* Supports CSV and Excel uploads
+* Strong validation with early failure on missing required fields
 
 ---
 
 ### 2. Hybrid Risk Evaluation Engine
 
-FutureGuard uses a **hybrid risk strategy** to ensure reliability and transparency:
+FutureGuard uses a **hybrid risk strategy** to ensure reliability, interpretability, and fairness.
 
 #### Rule-Based Engine
 
-- Deterministic checks on:
+* Deterministic checks on:
 
-  - Attendance
-  - CGPA
-  - Fees status
-
-- Produces human-readable explanations
+  * Attendance
+  * CGPA
+  * Fees status
+* Produces **human-readable explanations**
+* Guarantees predictable outcomes for critical thresholds
 
 #### Machine Learning Engine
 
-- XGBoost-based classifier
-- Outputs dropout probability
-- Uses a standardized feature vector
+* XGBoost-based classifier
+* Outputs dropout probability
+* Uses a standardized, metadata-aligned feature vector
+* Hosted models dynamically loaded at runtime
 
 **Final Risk Decision**
 
@@ -50,53 +57,78 @@ FutureGuard uses a **hybrid risk strategy** to ensure reliability and transparen
 final_risk = max(rule_based_risk, ml_risk)
 ```
 
----
-
-### 3. Role-Based Dashboards
-
-**SuperAdmin**
-
-- System-wide aggregations
-- Cross-institute success tracking
-
-**Admin**
-
-- Mentor management
-- Institute-level analytics
-
-**Mentor**
-
-- Upload student data
-- Identify high-risk students
-- Track improvement and success cases
-- View per-student explanations and recommendations
+This ensures **high-risk students are never missed**, even if ML confidence is lower.
 
 ---
 
-### 4. Real-Time Aggregations
+### 3. Explainable Predictions (SHAP)
 
-- Risk distribution (High / Medium / Low)
-- Success tracking (risk reduction over time)
-- Automatic propagation:
-
-  ```
-  Mentor → Admin → SuperAdmin
-  ```
-
-- Fully consistent across re-uploads and updates
-
----
-
-### 5. Explainable Predictions
+FutureGuard integrates **SHAP (SHapley Additive exPlanations)** for transparent ML interpretability.
 
 Each prediction includes:
 
-- ML risk bucket
-- Rule-based risk bucket
-- Explicit rule triggers
-- Actionable recommendations
+* Feature-level SHAP contributions
+* Positive and negative impact on risk score
+* Top contributing risk factors
+* Alignment with rule-based explanations
 
-No black-box outputs.
+This ensures:
+
+* No black-box predictions
+* Trust for mentors and administrators
+* Clear justification for interventions
+
+---
+
+### 4. Role-Based Dashboards
+
+**SuperAdmin**
+
+* System-wide aggregations
+* Cross-institute success tracking
+* Platform-level performance insights
+
+**Admin**
+
+* Mentor management
+* Institute-level analytics
+* Risk trend monitoring
+
+**Mentor**
+
+* Upload student data
+* Identify high-risk students
+* View SHAP-based explanations per student
+* Track improvement and success cases
+* Access actionable recommendations
+
+---
+
+### 5. Real-Time Aggregations
+
+* Risk distribution (High / Medium / Low)
+* Success tracking (risk reduction over time)
+* Automatic propagation:
+
+```
+Mentor → Admin → SuperAdmin
+```
+
+* Fully consistent across re-uploads and student updates
+
+---
+
+### 6. Explainable & Actionable Outputs
+
+Each prediction includes:
+
+* ML risk bucket
+* Rule-based risk bucket
+* SHAP feature importance
+* Explicit rule triggers
+* Personalized recommendations
+
+Designed for **intervention**, not just prediction.
 
 ---
 
@@ -104,30 +136,31 @@ No black-box outputs.
 
 ### Backend (Node.js + Express)
 
-- File upload handling
-- Metadata normalization and validation
-- Student persistence and updates
-- Aggregation propagation
-- ML service integration
+* File upload handling
+* Metadata normalization and validation
+* Student persistence and updates
+* Aggregation propagation
+* Secure integration with ML service
 
 ### ML Service (FastAPI)
 
-- Stateless inference microservice
-- Feature preprocessing and scaling
-- XGBoost probability prediction
-- Rule-based risk evaluation
-- Explanation and recommendation generation
+* Stateless inference microservice
+* Feature preprocessing and scaling
+* XGBoost probability prediction
+* Rule-based risk evaluation
+* **SHAP-based explanation generation**
+* Recommendation engine
 
 ### Frontend (React + Tailwind + Recharts)
 
-- Mentor dashboard
-- Analytics and drill-downs
-- Upload history tracking
-- Interactive charts:
+* Mentor dashboard
+* Analytics and drill-downs
+* Upload history tracking
+* Interactive charts:
 
-  - Risk distribution
-  - Success vs high-risk comparison
-  - Feature-level breakdowns
+  * Risk distribution
+  * Success vs high-risk comparison
+  * Feature-level & SHAP-driven insights
 
 ---
 
@@ -165,7 +198,12 @@ No black-box outputs.
       "explanation": {
         "ml_risk": "high",
         "rule_risk": "medium",
-        "rule_reasons": ["Fees pending", "Attendance below 60%"]
+        "rule_reasons": ["Fees pending", "Attendance below 60%"],
+        "shap_values": {
+          "attendancePercentage": 0.21,
+          "cgpa": 0.18,
+          "feesPaid": 0.14
+        }
       },
       "recommendation": "Increase study hours and attend mentoring sessions."
     }
@@ -181,18 +219,18 @@ No black-box outputs.
 
 **High Risk**
 
-- Attendance < 50%
-- CGPA < 3
+* Attendance < 50%
+* CGPA < 3
 
 **Medium Risk**
 
-- Fees pending
-- Attendance < 60%
-- CGPA < 6
+* Fees pending
+* Attendance < 60%
+* CGPA < 6
 
 **Low Risk**
 
-- None of the above
+* None of the above
 
 ---
 
@@ -200,8 +238,8 @@ No black-box outputs.
 
 A student is marked as a **success case** when:
 
-- Previous risk ∈ {High, Medium}
-- Current risk = Low
+* Previous risk ∈ {High, Medium}
+* Current risk = Low
 
 ---
 
@@ -212,14 +250,14 @@ The ML models were trained using the **UCI Machine Learning Repository dataset**
 **Predict Students Dropout and Academic Success**
 [https://archive.ics.uci.edu/dataset/697/predict+students+dropout+and+academic+success](https://archive.ics.uci.edu/dataset/697/predict+students+dropout+and+academic+success)
 
-The dataset was cleaned, standardized, and mapped to FutureGuard’s unified feature schema for model training and validation.
+The dataset was cleaned, standardized, and mapped to FutureGuard’s unified feature schema for training, validation, and SHAP analysis.
 
 ---
 
 ## Model Hosting & Loading
 
-- Trained ML models are hosted on **Hugging Face**
-- The ML service dynamically loads models from this repository at runtime
+* Trained ML models are hosted on **Hugging Face**
+* SHAP-compatible models are dynamically loaded at runtime
 
 **Model Repository:**
 [https://huggingface.co/Epicmanpreet02/futureguard-ml-models](https://huggingface.co/Epicmanpreet02/futureguard-ml-models)
@@ -230,22 +268,23 @@ The dataset was cleaned, standardized, and mapped to FutureGuard’s unified fea
 
 To keep the repository clean and secure:
 
-- Model training notebooks
-- Raw and processed datasets
-- Serialized ML models
+* Model training notebooks
+* Raw and processed datasets
+* Serialized ML models
 
 are **intentionally git-ignored**.
 
-Only inference logic, preprocessing code, and API contracts are included in this repository.
+Only inference logic, preprocessing pipelines, SHAP explainability code, and API contracts are included.
 
 ---
 
 ## Data Privacy & Safety
 
-- No raw student files are stored
-- Only validated, standardized fields are persisted
-- Student identifiers are scoped per institute
-- ML service is stateless and isolated
+* No raw student files are stored
+* Only validated, standardized fields are persisted
+* Student identifiers are scoped per institute
+* ML service is stateless and isolated
+* Explainability outputs do not expose sensitive raw data
 
 ---
 
@@ -253,20 +292,22 @@ Only inference logic, preprocessing code, and API contracts are included in this
 
 ### Completed
 
-- Centralized metadata system
-- Upload normalization pipeline
-- Rule-based + ML hybrid prediction
-- Aggregation propagation
-- Mentor dashboard and analytics
-- Upload history and success tracking
+* Centralized metadata system
+* Upload normalization pipeline
+* Rule-based + ML hybrid prediction
+* **SHAP-based explainability**
+* Aggregation propagation
+* Mentor dashboard and analytics
+* Upload history and success tracking
+* **Production deployment on Render**
 
 ### Planned
 
-- Automated retraining
-- Advanced explainability (SHAP/LIME)
-- Longitudinal analytics
-- Alerting and intervention workflows
-- CI/CD and deployment hardening
+* Automated retraining pipelines
+* Longitudinal risk analytics
+* Alerting & intervention workflows
+* CI/CD hardening
+* Advanced explainability visualizations
 
 ---
 
@@ -274,23 +315,24 @@ Only inference logic, preprocessing code, and API contracts are included in this
 
 **Frontend**
 
-- React
-- Tailwind CSS
-- Recharts
+* React
+* Tailwind CSS
+* Recharts
 
 **Backend**
 
-- Node.js
-- Express
-- MongoDB (Mongoose)
+* Node.js
+* Express
+* MongoDB (Mongoose)
 
 **ML Service**
 
-- FastAPI
-- XGBoost
-- Pandas
-- Scikit-learn
-- Joblib
+* FastAPI
+* XGBoost
+* SHAP
+* Pandas
+* Scikit-learn
+* Joblib
 
 ---
 
