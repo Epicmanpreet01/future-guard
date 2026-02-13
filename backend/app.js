@@ -11,16 +11,26 @@ import aggregationRoutes from "./routes/aggregation.route.js";
 import metadataRoutes from "./routes/metadata.route.js";
 import mentorRoutes from "./routes/mentor.route.js";
 
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 
-app.use(cors({ origin: process.env.CLIENT_ORIGIN ?? true, credentials: true }));
+if (process.env.MODE !== "production") {
+  app.use(cors({ origin: process.env.CLIENT_ORIGIN, credentials: true }));
+}
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-app.get("/", (_req, res) =>
-  res.status(200).json({ message: "API is running..." }),
-);
+if (process.env.MODE !== "production") {
+  app.get("/", (_req, res) =>
+    res.status(200).json({ message: "API is running..." }),
+  );
+}
 
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
@@ -28,6 +38,19 @@ app.use("/api/institute", instituteRoutes);
 app.use("/api/aggregation", aggregationRoutes);
 app.use("/api/metadata", metadataRoutes);
 app.use("/api/mentor", mentorRoutes);
+
+if (process.env.MODE === "production") {
+  const frontendPath = path.join(__dirname, "../frontend/dist");
+
+  app.use(express.static(frontendPath));
+
+  app.use((req, res, next) => {
+    if (req.method !== "GET") return next();
+    if (req.path.startsWith("/api")) return next();
+
+    res.sendFile(path.join(frontendPath, "index.html"));
+  });
+}
 
 app.use((err, _req, res, _next) => {
   console.error("Unhandled error:", err);
