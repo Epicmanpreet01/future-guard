@@ -10,7 +10,7 @@ The entire system is **production-deployed on Render**.
 
 ## Live Deployment
 
-**Application URL:** https://future-guard.onrender.com
+**Application URL:** https://futureguard.onrender.com
 
 ---
 
