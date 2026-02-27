@@ -30,9 +30,9 @@ class InferenceService:
 
   @staticmethod
   def risk_bucket(score: float) -> str:
-    if score > 0.7:
+    if score > 0.80:
       return "high"
-    if score > 0.5:
+    if score > 0.6:
       return "medium"
     return "low"
 

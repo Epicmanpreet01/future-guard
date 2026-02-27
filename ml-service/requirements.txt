@@ -12,6 +12,5 @@ pydantic
 python-dotenv
 
 shap
-lime
 
 requests
