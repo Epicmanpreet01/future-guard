@@ -19,9 +19,7 @@ class ModelLoader:
       os.makedirs(directory, exist_ok=True)
 
   def _download_file(self, url: str, dest: str) -> None:
-    if os.path.exists(dest):
-      return
-
+    print(f"Downloading model from {url}")
     if not MODEL_BASE_URL:
       raise ModelNotFoundError("MODEL_BASE_URL is not configured")
 
@@ -35,16 +33,28 @@ class ModelLoader:
 
   def load_predictor(self) -> Any:
     if self._model is None:
+
+      if os.path.exists(PREDICTOR_PATH):
+        self._model = joblib.load(PREDICTOR_PATH)
+        return self._model
+
       model_url = f"{MODEL_BASE_URL}/{MODEL_FILENAME}"
       self._download_file(model_url, PREDICTOR_PATH)
+
       self._model = joblib.load(PREDICTOR_PATH)
 
     return self._model
 
   def load_scaler(self) -> Any:
     if self._scaler is None:
+
+      if os.path.exists(SCALER_PATH):
+        self._scaler = joblib.load(SCALER_PATH)
+        return self._scaler
+
       scaler_url = f"{MODEL_BASE_URL}/{SCALER_FILENAME}"
       self._download_file(scaler_url, SCALER_PATH)
+
       self._scaler = joblib.load(SCALER_PATH)
 
     return self._scaler
