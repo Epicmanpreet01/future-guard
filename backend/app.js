@@ -66,3 +66,4 @@ try {
   console.error("Error connecting to DB:", error);
   process.exit(1);
 }
+// Trigger nodemon restart

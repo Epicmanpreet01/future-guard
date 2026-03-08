@@ -38,6 +38,7 @@ import { useUploadStudentsMutation } from "../../hooks/mutations/useUploadStuden
 import { useLogoutMutation } from "../../hooks/mutations/authMutation";
 import useAggregationsQuery from "../../hooks/queries/useAggregations";
 import { exportInstituteTableCSV } from "../../utils/dashboardUtils";
+import LoadingSpinner from "../../components/utils/LoadingSpinner.jsx";
 
 const riskToNumber = { Low: 1, Medium: 2, High: 3 };
 const riskColors = { Low: "#22c55e", Medium: "#f59e0b", High: "#ef4444" };
@@ -97,16 +98,16 @@ export default function MentorDashboard({ authUser }) {
 
   const avgAttendance = hasUploadedFile
     ? Math.round(
-        uploadedStudents.reduce(
-          (sum, s) => sum + Number(s.features?.attendancePercentage || 0),
-          0,
-        ) / uploadedStudents.length,
-      )
+      uploadedStudents.reduce(
+        (sum, s) => sum + Number(s.features?.attendancePercentage || 0),
+        0,
+      ) / uploadedStudents.length,
+    )
     : null;
 
   const feesPendingCount = hasUploadedFile
     ? uploadedStudents.filter((s) => String(s.features?.feesPaid) !== "true")
-        .length
+      .length
     : null;
 
   const stats = {
@@ -218,10 +219,14 @@ export default function MentorDashboard({ authUser }) {
                 <button
                   onClick={() => logoutMutate()}
                   disabled={logoutPending}
-                  className="flex items-center px-4 py-2 text-sm font-medium text-red-700 bg-red-100 border border-red-200 rounded-lg hover:bg-red-200 transition-colors"
+                  className="flex items-center px-4 py-2 text-sm font-medium text-red-700 bg-red-100 border border-red-200 rounded-lg hover:bg-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Log Out"
                 >
-                  <LogOut className="w-4 h-4 mr-2" />
+                  {logoutPending ? (
+                    <LoadingSpinner className="w-4 h-4 mr-2 text-red-700" />
+                  ) : (
+                    <LogOut className="w-4 h-4 mr-2" />
+                  )}
                   Log Out
                 </button>
               </div>
@@ -419,35 +424,15 @@ const QuickActions = ({
         onClick={onImportStudents}
         disabled={uploadPending}
         className={`w-full flex items-center px-4 py-3 text-left text-sm font-medium rounded-lg transition-colors
-    ${
-      uploadPending
-        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-        : "text-gray-700 bg-gray-50 hover:bg-gray-100"
-    }
+    ${uploadPending
+            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+            : "text-gray-700 bg-gray-50 hover:bg-gray-100"
+          }
   `}
       >
         {uploadPending ? (
           <>
-            <svg
-              className="animate-spin h-5 w-5 mr-3 text-amber-500"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-              />
-            </svg>
+            <LoadingSpinner className="w-5 h-5 mr-3 text-amber-500" />
             Processing students…
           </>
         ) : (
@@ -529,9 +514,8 @@ const StudentTable = ({ students, isModal = false }) => {
                 </td>
                 <td className="px-6 py-4 text-sm text-center">
                   <span
-                    className={`inline-flex items-center text-xs font-medium ${
-                      student.feesPaid ? "text-green-600" : "text-orange-600"
-                    }`}
+                    className={`inline-flex items-center text-xs font-medium ${student.feesPaid ? "text-green-600" : "text-orange-600"
+                      }`}
                   >
                     {student.feesPaid ? (
                       <CheckCircle2 className="w-4 h-4 mr-1.5" />
@@ -592,9 +576,8 @@ const ActionMenu = ({ student, isFirst, onViewProfile }) => {
       </button>
       {isOpen && (
         <div
-          className={`absolute right-8 ${
-            isFirst ? "bottom-full mb-1" : "top-full mt-1"
-          } w-48 bg-white rounded-md shadow-lg border border-gray-200 z-20`}
+          className={`absolute right-8 ${isFirst ? "bottom-full mb-1" : "top-full mt-1"
+            } w-48 bg-white rounded-md shadow-lg border border-gray-200 z-20`}
         >
           <ul className="py-1">
             <li

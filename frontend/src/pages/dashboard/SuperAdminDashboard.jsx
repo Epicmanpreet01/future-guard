@@ -196,12 +196,16 @@ export default function SuperAdminDashboard({ authUser }) {
               </div>
               <button
                 onClick={handleLogout}
-                className="flex items-center px-4 py-2 text-sm font-medium text-red-700 bg-red-100 border border-red-200 rounded-lg hover:bg-red-200 transition-colors"
+                disabled={logoutPending}
+                className="flex items-center px-4 py-2 text-sm font-medium text-red-700 bg-red-100 border border-red-200 rounded-lg hover:bg-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Log Out"
               >
-                {logoutPending && <LoadingSpinner />}
-                {!logoutPending && <LogOut className="w-4 h-4 mr-2" />}
-                {!logoutPending && "Log Out"}
+                {logoutPending ? (
+                  <LoadingSpinner className="w-4 h-4 mr-2 text-red-700" />
+                ) : (
+                  <LogOut className="w-4 h-4 mr-2" />
+                )}
+                Log Out
               </button>
             </div>
           </div>
@@ -255,15 +259,15 @@ export default function SuperAdminDashboard({ authUser }) {
                   <div
                     className="bg-green-200 h-8 flex items-center justify-center transition-all duration-500"
                     style={{
-                      width: `${
-                        (globalInstituteStats.active /
-                          totalInstitutesForPercentage) *
+                      width: `${(globalInstituteStats.active /
+                        totalInstitutesForPercentage) *
                         100
-                      }%`,
+                        }%`,
+                      minWidth: globalInstituteStats.active > 0 ? "fit-content" : 0
                     }}
                   >
                     {globalInstituteStats.active > 0 && (
-                      <span className="font-medium text-green-700">
+                      <span className="font-medium text-green-700 whitespace-nowrap px-3">
                         {globalInstituteStats.active} Active
                       </span>
                     )}
@@ -271,15 +275,15 @@ export default function SuperAdminDashboard({ authUser }) {
                   <div
                     className="bg-red-200 h-8 flex items-center justify-center transition-all duration-500"
                     style={{
-                      width: `${
-                        (globalInstituteStats.inactive /
-                          totalInstitutesForPercentage) *
+                      width: `${(globalInstituteStats.inactive /
+                        totalInstitutesForPercentage) *
                         100
-                      }%`,
+                        }%`,
+                      minWidth: globalInstituteStats.inactive > 0 ? "fit-content" : 0
                     }}
                   >
                     {globalInstituteStats.inactive > 0 && (
-                      <span className="font-medium text-red-700">
+                      <span className="font-medium text-red-700 whitespace-nowrap px-3">
                         {globalInstituteStats.inactive} Inactive
                       </span>
                     )}
@@ -302,11 +306,10 @@ export default function SuperAdminDashboard({ authUser }) {
                             <div
                               className="bg-blue-400 h-4 rounded-full transition-all duration-500"
                               style={{
-                                width: `${
-                                  (getRiskTotal(inst) /
-                                    maxTopInstituteStudents) *
+                                width: `${(getRiskTotal(inst) /
+                                  maxTopInstituteStudents) *
                                   100
-                                }%`,
+                                  }%`,
                               }}
                             ></div>
                           </div>
@@ -412,11 +415,10 @@ export default function SuperAdminDashboard({ authUser }) {
                           </td>
                           <td className="px-6 py-4 text-sm text-center">
                             <span
-                              className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                i.adminId.activeStatus
-                                  ? "bg-green-100 text-green-700"
-                                  : "bg-red-100 text-red-700"
-                              }`}
+                              className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${i.adminId.activeStatus
+                                ? "bg-green-100 text-green-700"
+                                : "bg-red-100 text-red-700"
+                                }`}
                             >
                               {i.adminId.activeStatus ? "Active" : "Inactive"}
                             </span>
@@ -495,9 +497,8 @@ export default function SuperAdminDashboard({ authUser }) {
                       <div
                         className={`${item.color} h-2.5 rounded-full`}
                         style={{
-                          width: `${
-                            (item.count / globalRiskStats.total) * 100
-                          }%`,
+                          width: `${(item.count / globalRiskStats.total) * 100
+                            }%`,
                         }}
                       ></div>
                     </div>
@@ -524,9 +525,8 @@ export default function SuperAdminDashboard({ authUser }) {
                       <div
                         className={`${item.color} h-2.5 rounded-full`}
                         style={{
-                          width: `${
-                            (item.count / globalRiskStats.total) * 100
-                          }%`,
+                          width: `${(item.count / globalRiskStats.total) * 100
+                            }%`,
                         }}
                       ></div>
                     </div>
@@ -553,11 +553,10 @@ export default function SuperAdminDashboard({ authUser }) {
                       </p>
                     </div>
                     <div
-                      className={`flex items-center space-x-1 ${
-                        getSuccessRate(inst.adminId) >= 85
-                          ? "text-green-500"
-                          : "text-red-500"
-                      }`}
+                      className={`flex items-center space-x-1 ${getSuccessRate(inst.adminId) >= 85
+                        ? "text-green-500"
+                        : "text-red-500"
+                        }`}
                     >
                       {inst.interventionSuccess >= 85 ? (
                         <TrendingUp className="w-4 h-4" />
@@ -589,6 +588,7 @@ export default function SuperAdminDashboard({ authUser }) {
         show={showAddInstituteModal}
         onClose={() => setShowAddInstituteModal(false)}
         onAdd={handleAddInstitute}
+        isPending={addInstitutePending}
       />
       {selectedInstitute && (
         <EditInstituteModal
@@ -600,6 +600,7 @@ export default function SuperAdminDashboard({ authUser }) {
           institute={selectedInstitute}
           setInstitute={setSelectedInstitute}
           onUpdate={handleUpdateInstitute}
+          isPending={updatetatusPending}
         />
       )}
     </div>
@@ -670,7 +671,7 @@ const InputField = ({ label, ...props }) => (
   </div>
 );
 
-const AddInstituteModal = ({ show, onClose, onAdd }) => {
+const AddInstituteModal = ({ show, onClose, onAdd, isPending }) => {
   const [newInstitute, setNewInstitute] = useState({
     instituteName: "",
     name: "",
@@ -732,8 +733,10 @@ const AddInstituteModal = ({ show, onClose, onAdd }) => {
         </button>
         <button
           onClick={handleAddClick}
-          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+          disabled={isPending}
+          className="flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
+          {isPending && <LoadingSpinner className="w-4 h-4 mr-2" />}
           Add Institute
         </button>
       </div>
@@ -747,6 +750,7 @@ const EditInstituteModal = ({
   institute,
   setInstitute,
   onUpdate,
+  isPending,
 }) => {
   if (!institute) return null;
 
@@ -805,8 +809,10 @@ const EditInstituteModal = ({
         </button>
         <button
           onClick={onUpdate}
-          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+          disabled={isPending}
+          className="flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
+          {isPending && <LoadingSpinner className="w-4 h-4 mr-2" />}
           Update Institute
         </button>
       </div>
