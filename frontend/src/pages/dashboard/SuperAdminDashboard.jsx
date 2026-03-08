@@ -329,7 +329,7 @@ export default function SuperAdminDashboard({ authUser }) {
             </div>
 
             {/* Institute Management Table */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-200">
                 <div className="flex justify-between items-center">
                   <h2 className="text-lg font-semibold text-gray-900">
@@ -353,113 +353,116 @@ export default function SuperAdminDashboard({ authUser }) {
                   />
                 </div>
               </div>
-              <div className="max-h-[800px] overflow-y-auto">
-                <table id="instituteTable" className="w-full">
-                  <thead className="bg-gray-50 sticky top-0 z-10">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Institute
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Admin
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Mentors
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Students
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Success
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        High Risk
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredInstitutes.length > 0 ? (
-                      filteredInstitutes.map((i) => (
-                        <tr
-                          key={i._id}
-                          className="hover:bg-gray-50 transition-colors"
-                        >
-                          <td className="px-6 py-4">
-                            <div className="text-sm font-medium text-gray-900">
-                              {i.instituteName}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {getReadableId(i._id)}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-900">
-                            {i.adminId.name}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-center text-gray-900">
-                            {getTotalMentor(i.adminId)}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-center text-gray-900">
-                            {getRiskTotal(i)}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-center text-gray-900">
-                            {getSuccessRate(i.adminId)}%
-                          </td>
-                          <td className="px-6 py-4 text-sm text-red-600 text-center font-medium">
-                            {i.adminId.aggregations.risk.high}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-center">
-                            <span
-                              className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${i.adminId.activeStatus
-                                ? "bg-green-100 text-green-700"
-                                : "bg-red-100 text-red-700"
-                                }`}
-                            >
-                              {i.adminId.activeStatus ? "Active" : "Inactive"}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-sm font-medium text-center">
-                            <div className="flex space-x-3 justify-center">
-                              <button
-                                onClick={() => {
-                                  setSelectedInstitute({ ...i });
-                                  setShowEditInstituteModal(true);
-                                }}
-                                className="text-blue-600 hover:text-blue-900 transition-colors"
-                                title="View/Edit Institute"
+              <div className="overflow-x-auto w-full">
+                <div className="max-h-[800px] overflow-y-auto block min-w-[1024px]">
+                  <table id="instituteTable" className="w-full">
+                    <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                          Institute
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                          Admin
+                        </th>
+                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                          Mentors
+                        </th>
+                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                          Students
+                        </th>
+                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                          Success
+                        </th>
+                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                          High Risk
+                        </th>
+                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {filteredInstitutes.length > 0 ? (
+                        filteredInstitutes.map((i) => (
+                          <tr
+                            key={i._id}
+                            className="hover:bg-gray-50 transition-colors"
+                          >
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm font-medium text-gray-900 truncate max-w-[200px]" title={i.instituteName}>
+                                {i.instituteName}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {getReadableId(i._id)}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap">
+                              {i.adminId.name}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-center text-gray-900">
+                              {getTotalMentor(i.adminId)}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-center text-gray-900">
+                              {getRiskTotal(i)}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-center text-gray-900">
+                              {getSuccessRate(i.adminId)}%
+                            </td>
+                            <td className="px-6 py-4 text-sm text-red-600 text-center font-medium">
+                              {i.adminId.aggregations.risk.high}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-center whitespace-nowrap">
+                              <span
+                                className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${i.adminId.activeStatus
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-red-100 text-red-700"
+                                  }`}
                               >
-                                <Eye className="w-5 h-5" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteInstitute(i._id)}
-                                className="text-red-500 hover:text-red-800 transition-colors"
-                                title="Delete Institute"
-                              >
-                                <Trash2 className="w-5 h-5" />
-                              </button>
-                            </div>
+                                {i.adminId.activeStatus ? "Active" : "Inactive"}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-sm font-medium text-center whitespace-nowrap">
+                              <div className="flex space-x-3 justify-center">
+                                <button
+                                  onClick={() => {
+                                    setSelectedInstitute({ ...i });
+                                    setShowEditInstituteModal(true);
+                                  }}
+                                  className="text-blue-600 hover:text-blue-900 transition-colors"
+                                  title="View/Edit Institute"
+                                >
+                                  <Eye className="w-5 h-5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteInstitute(i._id)}
+                                  className="text-red-500 hover:text-red-800 transition-colors"
+                                  title="Delete Institute"
+                                >
+                                  <Trash2 className="w-5 h-5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td
+                            colSpan="8"
+                            className="text-center py-12 text-gray-500"
+                          >
+                            No institutes found.
                           </td>
                         </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td
-                          colSpan="8"
-                          className="text-center py-12 text-gray-500"
-                        >
-                          No institutes found.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
+
           </div>
 
           {/* Right Sidebar */}
