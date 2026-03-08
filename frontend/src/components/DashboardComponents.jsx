@@ -22,14 +22,14 @@ export const DashboardHeader = ({ userType, user, onLogout, isLoggingOut = false
                     <div className="flex items-center space-x-3">
                         <div className={`flex items-center justify-center w-10 h-10 bg-gradient-to-r ${color} rounded-lg`}>{icon}</div>
                         <div>
-                            <h1 className="text-xl font-bold text-gray-900">{title}</h1>
-                            <p className="text-sm text-gray-500">{subtitle}</p>
+                            <h1 className="text-lg md:text-xl font-bold text-gray-900 leading-tight">{title}</h1>
+                            <p className="text-sm text-gray-500 hidden md:block">{subtitle}</p>
                         </div>
                     </div>
-                    <div className="flex items-center space-x-4">
-                        <div className="text-right">
-                            <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                            <p className="text-xs text-gray-500">{user.institution}</p>
+                    <div className="flex items-center space-x-2 sm:space-x-4 shrink-0">
+                        <div className="text-right hidden sm:block">
+                            <p className="text-sm font-medium text-gray-900 truncate max-w-[120px]">{user.name}</p>
+                            <p className="text-xs text-gray-500 truncate max-w-[120px]">{user.institution}</p>
                         </div>
                         <button onClick={onLogout} disabled={isLoggingOut} className="flex items-center px-4 py-2 text-sm font-medium text-red-700 bg-red-100 border border-red-200 rounded-lg hover:bg-red-200 transition-colors disabled:opacity-50">
                             <LogOut className="w-4 h-4 mr-2" />

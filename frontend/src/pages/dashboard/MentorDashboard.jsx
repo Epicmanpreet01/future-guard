@@ -207,7 +207,7 @@ export default function MentorDashboard({ authUser }) {
                   <User className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-gray-900">
+                  <h1 className="text-lg md:text-xl font-bold text-gray-900 leading-tight">
                     Mentor Dashboard
                   </h1>
                   <p className="text-sm text-gray-500">
