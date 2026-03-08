@@ -267,7 +267,7 @@ export default function AdminDashboard({ authUser }) {
         isLoggingOut={isPending}
       />
 
-      <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+      <main className="flex-grow max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-4 py-8 w-full">
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCard
             icon={Users}
@@ -478,29 +478,29 @@ const MentorManagementTable = ({
       </div>
     </div>
     <div className="overflow-x-auto w-full">
-      <div className="max-h-150 overflow-y-auto block min-w-[1024px]">
-        <table id="mentorTable" className="w-full">
+      <div className="max-h-150 overflow-y-auto block">
+        <table id="mentorTable" className="w-full text-sm">
           <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                 Mentor
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                 Department
               </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                 Students
               </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                 Success
               </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                 High Risk
               </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                 Status
               </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                 Actions
               </th>
             </tr>
@@ -509,7 +509,7 @@ const MentorManagementTable = ({
             {mentors.length > 0 ? (
               mentors.map((mentor) => (
                 <tr key={mentor._id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900 truncate max-w-[200px]" title={mentor.name}>
                       {mentor.name}
                     </div>
@@ -517,19 +517,19 @@ const MentorManagementTable = ({
                       {getReadableId(mentor._id)}
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap">
+                  <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">
                     {mentor.department}
                   </td>
-                  <td className="px-6 py-4 text-sm text-center text-gray-900">
+                  <td className="px-4 py-4 text-sm text-center text-gray-900">
                     {getTotalStudents(mentor)}
                   </td>
-                  <td className="px-6 py-4 text-sm text-center text-gray-900">
+                  <td className="px-4 py-4 text-sm text-center text-gray-900">
                     {getSuccessRate(mentor)}%
                   </td>
-                  <td className="px-6 py-4 text-sm text-red-500 font-medium text-center">
+                  <td className="px-4 py-4 text-sm text-red-500 font-medium text-center">
                     {mentor.aggregations.risk.high}
                   </td>
-                  <td className="px-6 py-4 text-center whitespace-nowrap">
+                  <td className="px-4 py-4 text-center whitespace-nowrap">
                     <span
                       className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${mentor.activeStatus
                         ? "bg-green-100 text-green-700"
@@ -539,7 +539,7 @@ const MentorManagementTable = ({
                       {mentor.activeStatus ? "Active" : "Inactive"}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm font-medium whitespace-nowrap">
+                  <td className="px-4 py-4 text-sm font-medium whitespace-nowrap">
                     <div className="flex space-x-3 justify-center">
                       <button
                         onClick={() => onEditMentor(mentor)}

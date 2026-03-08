@@ -269,7 +269,7 @@ export default function MentorDashboard({ authUser }) {
                   High-Risk Student Management
                 </h2>
               </div>
-              <div className="flex-grow overflow-y-auto max-h-[600px]">
+              <div className="flex-grow overflow-y-auto">
                 <StudentTable students={highRiskStudents} />
               </div>
             </div>
@@ -455,7 +455,7 @@ const QuickActions = ({
   </div>
 );
 
-const StudentTable = ({ students, isModal = false }) => {
+const StudentTable = ({ students }) => {
   const [viewingStudent, setViewingStudent] = useState(null);
 
   const getRiskClass = (risk) =>
@@ -467,82 +467,86 @@ const StudentTable = ({ students, isModal = false }) => {
 
   return (
     <>
-      <table id="student-table" className="w-full">
-        <thead className="bg-gray-50 sticky top-0 z-10">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Student
-            </th>
-            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Attendance
-            </th>
-            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Risk Level
-            </th>
-            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Fees
-            </th>
-            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {students.length > 0 ? (
-            students.map((student, index) => (
-              <tr
-                key={student.id}
-                className="hover:bg-gray-50 transition-colors"
-              >
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">
-                    {student.name}
-                  </div>
-                  <div className="text-sm text-gray-500">{student.id}</div>
-                </td>
-                <td className="px-6 py-4 text-sm text-center text-gray-900">
-                  {student.attendance}%
-                </td>
-                <td className="px-6 py-4 text-center">
-                  <span
-                    className={`inline-flex px-2.5 py-1 text-xs font-semibold rounded-full ${getRiskClass(
-                      student.risk,
-                    )}`}
-                  >
-                    {student.risk}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-sm text-center">
-                  <span
-                    className={`inline-flex items-center text-xs font-medium ${student.feesPaid ? "text-green-600" : "text-orange-600"
-                      }`}
-                  >
-                    {student.feesPaid ? (
-                      <CheckCircle2 className="w-4 h-4 mr-1.5" />
-                    ) : (
-                      <AlertTriangle className="w-4 h-4 mr-1.5" />
-                    )}
-                    {student.feesPaid ? "Paid" : "Pending"}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-sm text-center font-medium relative">
-                  <ActionMenu
-                    student={student}
-                    isFirst={isModal && index < 2}
-                    onViewProfile={() => setViewingStudent(student)}
-                  />
-                </td>
+      <div className="overflow-x-auto w-full">
+        <div>
+          <table id="student-table" className="w-full text-sm">
+            <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  Student
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  Attendance
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  Risk Level
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  Fees
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  Actions
+                </th>
               </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan="5" className="text-center py-12 text-gray-500">
-                No students found.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {students.length > 0 ? (
+                students.map((student, index) => (
+                  <tr
+                    key={student.id}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {student.name}
+                      </div>
+                      <div className="text-sm text-gray-500">{student.id}</div>
+                    </td>
+                    <td className="px-4 py-4 text-sm text-center text-gray-900">
+                      {student.attendance}%
+                    </td>
+                    <td className="px-4 py-4 text-center">
+                      <span
+                        className={`inline-flex px-2.5 py-1 text-xs font-semibold rounded-full ${getRiskClass(
+                          student.risk,
+                        )}`}
+                      >
+                        {student.risk}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 text-sm text-center">
+                      <span
+                        className={`inline-flex items-center text-xs font-medium ${student.feesPaid ? "text-green-600" : "text-orange-600"
+                          }`}
+                      >
+                        {student.feesPaid ? (
+                          <CheckCircle2 className="w-4 h-4 mr-1.5" />
+                        ) : (
+                          <AlertTriangle className="w-4 h-4 mr-1.5" />
+                        )}
+                        {student.feesPaid ? "Paid" : "Pending"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 text-sm text-center font-medium relative">
+                      <ActionMenu
+                        student={student}
+                        openUpwards={index > students.length - 3 && students.length > 3}
+                        onViewProfile={() => setViewingStudent(student)}
+                      />
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="5" className="text-center py-12 text-gray-500">
+                    No students found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
       {viewingStudent && (
         <StudentProfileModal
           student={viewingStudent}
@@ -553,7 +557,7 @@ const StudentTable = ({ students, isModal = false }) => {
   );
 };
 
-const ActionMenu = ({ student, isFirst, onViewProfile }) => {
+const ActionMenu = ({ student, openUpwards, onViewProfile }) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef(null);
   useEffect(() => {
@@ -576,7 +580,7 @@ const ActionMenu = ({ student, isFirst, onViewProfile }) => {
       </button>
       {isOpen && (
         <div
-          className={`absolute right-8 ${isFirst ? "bottom-full mb-1" : "top-full mt-1"
+          className={`absolute right-8 ${openUpwards ? "bottom-full mb-1" : "top-full mt-1"
             } w-48 bg-white rounded-md shadow-lg border border-gray-200 z-20`}
         >
           <ul className="py-1">
@@ -696,7 +700,7 @@ const AllStudentsModal = ({ students, onClose }) => {
           </div>
         </div>
         <div className="flex-grow overflow-y-auto">
-          <StudentTable students={filteredStudents} isModal={true} />
+          <StudentTable students={filteredStudents} />
         </div>
       </div>
     </div>

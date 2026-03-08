@@ -17,7 +17,7 @@ export const DashboardHeader = ({ userType, user, onLogout, isLoggingOut = false
 
     return (
         <header className="bg-white shadow-sm border-b border-gray-200">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-4">
                 <div className="flex justify-between items-center h-16">
                     <div className="flex items-center space-x-3">
                         <div className={`flex items-center justify-center w-10 h-10 bg-gradient-to-r ${color} rounded-lg`}>{icon}</div>
@@ -44,7 +44,7 @@ export const DashboardHeader = ({ userType, user, onLogout, isLoggingOut = false
 
 export const DashboardFooter = () => (
     <footer className="bg-white border-t border-gray-200 mt-8">
-        <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 text-center text-sm text-gray-500">
+        <div className="max-w-[1600px] mx-auto py-4 px-2 sm:px-4 lg:px-4 text-center text-sm text-gray-500">
             <p>&copy; {new Date().getFullYear()} FutureGuard. All rights reserved.</p>
         </div>
     </footer>

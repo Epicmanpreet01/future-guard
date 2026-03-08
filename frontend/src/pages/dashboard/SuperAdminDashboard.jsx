@@ -172,7 +172,7 @@ export default function SuperAdminDashboard({ authUser }) {
 
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-4">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-3">
               <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-blue-700 to-blue-500 rounded-lg">
@@ -213,7 +213,7 @@ export default function SuperAdminDashboard({ authUser }) {
       </header>
 
       {/* Main Content */}
-      <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+      <main className="flex-grow max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-4 py-8 w-full">
         {/* Stats */}
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCard
@@ -354,32 +354,32 @@ export default function SuperAdminDashboard({ authUser }) {
                 </div>
               </div>
               <div className="overflow-x-auto w-full">
-                <div className="max-h-[800px] overflow-y-auto block min-w-[1024px]">
+                <div className="max-h-[800px] overflow-y-auto block">
                   <table id="instituteTable" className="w-full">
                     <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                           Institute
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                           Admin
                         </th>
-                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                           Mentors
                         </th>
-                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                           Students
                         </th>
-                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                           Success
                         </th>
-                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                           High Risk
                         </th>
-                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                           Status
                         </th>
-                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                           Actions
                         </th>
                       </tr>
@@ -391,7 +391,7 @@ export default function SuperAdminDashboard({ authUser }) {
                             key={i._id}
                             className="hover:bg-gray-50 transition-colors"
                           >
-                            <td className="px-6 py-4 whitespace-nowrap">
+                            <td className="px-4 py-4 whitespace-nowrap">
                               <div className="text-sm font-medium text-gray-900 truncate max-w-[200px]" title={i.instituteName}>
                                 {i.instituteName}
                               </div>
@@ -399,22 +399,22 @@ export default function SuperAdminDashboard({ authUser }) {
                                 {getReadableId(i._id)}
                               </div>
                             </td>
-                            <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap">
+                            <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">
                               {i.adminId.name}
                             </td>
-                            <td className="px-6 py-4 text-sm text-center text-gray-900">
+                            <td className="px-4 py-4 text-sm text-center text-gray-900">
                               {getTotalMentor(i.adminId)}
                             </td>
-                            <td className="px-6 py-4 text-sm text-center text-gray-900">
+                            <td className="px-4 py-4 text-sm text-center text-gray-900">
                               {getRiskTotal(i)}
                             </td>
-                            <td className="px-6 py-4 text-sm text-center text-gray-900">
+                            <td className="px-4 py-4 text-sm text-center text-gray-900">
                               {getSuccessRate(i.adminId)}%
                             </td>
-                            <td className="px-6 py-4 text-sm text-red-600 text-center font-medium">
+                            <td className="px-4 py-4 text-sm text-red-600 text-center font-medium">
                               {i.adminId.aggregations.risk.high}
                             </td>
-                            <td className="px-6 py-4 text-sm text-center whitespace-nowrap">
+                            <td className="px-4 py-4 text-sm text-center whitespace-nowrap">
                               <span
                                 className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${i.adminId.activeStatus
                                   ? "bg-green-100 text-green-700"
@@ -424,7 +424,7 @@ export default function SuperAdminDashboard({ authUser }) {
                                 {i.adminId.activeStatus ? "Active" : "Inactive"}
                               </span>
                             </td>
-                            <td className="px-6 py-4 text-sm font-medium text-center whitespace-nowrap">
+                            <td className="px-4 py-4 text-sm font-medium text-center whitespace-nowrap">
                               <div className="flex space-x-3 justify-center">
                                 <button
                                   onClick={() => {
