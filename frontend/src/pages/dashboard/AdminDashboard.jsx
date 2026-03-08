@@ -325,6 +325,7 @@ export default function AdminDashboard({ authUser }) {
         show={showAddMentorModal}
         onClose={() => setShowAddMentorModal(false)}
         onAdd={handleAddMentor}
+        isPending={addMentorPending}
       />
       {selectedMentor && (
         <EditMentorModal
@@ -336,6 +337,7 @@ export default function AdminDashboard({ authUser }) {
           mentor={selectedMentor}
           setMentor={setSelectedMentor}
           onUpdate={handleUpdateMentor}
+          isPending={updateMentorPending}
         />
       )}
       <DepartmentsModal
@@ -378,9 +380,8 @@ const MentorAnalytics = ({ mentors, aggregations }) => {
           <div
             className="bg-green-200 h-8 flex items-center justify-center transition-all duration-500"
             style={{
-              width: `${
-                (activeInactiveData.active / totalMentorsForPercentage) * 100
-              }%`,
+              width: `${(activeInactiveData.active / totalMentorsForPercentage) * 100
+                }%`,
             }}
             title={`Active: ${activeInactiveData.active}`}
           >
@@ -393,9 +394,8 @@ const MentorAnalytics = ({ mentors, aggregations }) => {
           <div
             className="bg-red-200 h-8 flex items-center justify-center transition-all duration-500"
             style={{
-              width: `${
-                (activeInactiveData.inactive / totalMentorsForPercentage) * 100
-              }%`,
+              width: `${(activeInactiveData.inactive / totalMentorsForPercentage) * 100
+                }%`,
             }}
             title={`Inactive: ${activeInactiveData.inactive}`}
           >
@@ -529,11 +529,10 @@ const MentorManagementTable = ({
               </td>
               <td className="px-6 py-4 text-center">
                 <span
-                  className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    mentor.activeStatus
+                  className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${mentor.activeStatus
                       ? "bg-green-100 text-green-700"
                       : "bg-red-100 text-red-700"
-                  }`}
+                    }`}
                 >
                   {mentor.activeStatus ? "Active" : "Inactive"}
                 </span>
@@ -678,9 +677,8 @@ const AdminSidebar = ({ onShowDepartments, aggregations, mentors }) => {
                 </p>
               </div>
               <div
-                className={`flex items-center space-x-1 ${
-                  dept.trend === "up" ? "text-green-500" : "text-red-500"
-                }`}
+                className={`flex items-center space-x-1 ${dept.trend === "up" ? "text-green-500" : "text-red-500"
+                  }`}
               >
                 {dept.trend === "up" ? (
                   <TrendingUp className="w-4 h-4" />
@@ -697,7 +695,7 @@ const AdminSidebar = ({ onShowDepartments, aggregations, mentors }) => {
   );
 };
 
-const AddMentorModal = ({ show, onClose, onAdd }) => {
+const AddMentorModal = ({ show, onClose, onAdd, isPending }) => {
   const [newMentor, setNewMentor] = useState({
     name: "",
     email: "",
@@ -819,8 +817,10 @@ const AddMentorModal = ({ show, onClose, onAdd }) => {
         </button>
         <button
           onClick={handleAddClick}
-          className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700"
+          disabled={isPending}
+          className="flex items-center px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
+          {isPending && <LoadingSpinner className="w-4 h-4 mr-2" />}
           Add Mentor
         </button>
       </div>
@@ -828,7 +828,7 @@ const AddMentorModal = ({ show, onClose, onAdd }) => {
   );
 };
 
-const EditMentorModal = ({ show, onClose, mentor, setMentor, onUpdate }) => {
+const EditMentorModal = ({ show, onClose, mentor, setMentor, onUpdate, isPending }) => {
   const [deptQuery, setDeptQuery] = useState(mentor.department || "");
   const [showSuggestions, setShowSuggestions] = useState(false);
 
@@ -912,8 +912,10 @@ const EditMentorModal = ({ show, onClose, mentor, setMentor, onUpdate }) => {
         </button>
         <button
           onClick={onUpdate}
-          className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700"
+          disabled={isPending}
+          className="flex items-center px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
+          {isPending && <LoadingSpinner className="w-4 h-4 mr-2" />}
           Update Mentor
         </button>
       </div>
@@ -964,9 +966,8 @@ const DepartmentsModal = ({ show, onClose, mentors }) => {
             <div className="w-1/2 flex items-center">
               <div className="grow bg-gray-200 rounded-full h-4 mr-2">
                 <div
-                  className={`${
-                    dept.count > 0 ? "bg-green-300" : "bg-gray-200"
-                  } h-4 rounded-full`}
+                  className={`${dept.count > 0 ? "bg-green-300" : "bg-gray-200"
+                    } h-4 rounded-full`}
                   style={{ width: `${(dept.count / maxCount) * 100}%` }}
                 ></div>
               </div>
