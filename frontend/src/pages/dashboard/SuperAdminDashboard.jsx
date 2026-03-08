@@ -260,13 +260,14 @@ export default function SuperAdminDashboard({ authUser }) {
                     className="bg-green-200 h-8 flex items-center justify-center transition-all duration-500"
                     style={{
                       width: `${(globalInstituteStats.active /
-                          totalInstitutesForPercentage) *
+                        totalInstitutesForPercentage) *
                         100
                         }%`,
+                      minWidth: globalInstituteStats.active > 0 ? "fit-content" : 0
                     }}
                   >
                     {globalInstituteStats.active > 0 && (
-                      <span className="font-medium text-green-700">
+                      <span className="font-medium text-green-700 whitespace-nowrap px-3">
                         {globalInstituteStats.active} Active
                       </span>
                     )}
@@ -275,13 +276,14 @@ export default function SuperAdminDashboard({ authUser }) {
                     className="bg-red-200 h-8 flex items-center justify-center transition-all duration-500"
                     style={{
                       width: `${(globalInstituteStats.inactive /
-                          totalInstitutesForPercentage) *
+                        totalInstitutesForPercentage) *
                         100
                         }%`,
+                      minWidth: globalInstituteStats.inactive > 0 ? "fit-content" : 0
                     }}
                   >
                     {globalInstituteStats.inactive > 0 && (
-                      <span className="font-medium text-red-700">
+                      <span className="font-medium text-red-700 whitespace-nowrap px-3">
                         {globalInstituteStats.inactive} Inactive
                       </span>
                     )}
@@ -305,7 +307,7 @@ export default function SuperAdminDashboard({ authUser }) {
                               className="bg-blue-400 h-4 rounded-full transition-all duration-500"
                               style={{
                                 width: `${(getRiskTotal(inst) /
-                                    maxTopInstituteStudents) *
+                                  maxTopInstituteStudents) *
                                   100
                                   }%`,
                               }}
@@ -414,8 +416,8 @@ export default function SuperAdminDashboard({ authUser }) {
                           <td className="px-6 py-4 text-sm text-center">
                             <span
                               className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${i.adminId.activeStatus
-                                  ? "bg-green-100 text-green-700"
-                                  : "bg-red-100 text-red-700"
+                                ? "bg-green-100 text-green-700"
+                                : "bg-red-100 text-red-700"
                                 }`}
                             >
                               {i.adminId.activeStatus ? "Active" : "Inactive"}
@@ -552,8 +554,8 @@ export default function SuperAdminDashboard({ authUser }) {
                     </div>
                     <div
                       className={`flex items-center space-x-1 ${getSuccessRate(inst.adminId) >= 85
-                          ? "text-green-500"
-                          : "text-red-500"
+                        ? "text-green-500"
+                        : "text-red-500"
                         }`}
                     >
                       {inst.interventionSuccess >= 85 ? (

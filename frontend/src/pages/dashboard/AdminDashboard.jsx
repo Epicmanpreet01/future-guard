@@ -380,13 +380,13 @@ const MentorAnalytics = ({ mentors, aggregations }) => {
           <div
             className="bg-green-200 h-8 flex items-center justify-center transition-all duration-500"
             style={{
-              width: `${(activeInactiveData.active / totalMentorsForPercentage) * 100
-                }%`,
+              width: `${(activeInactiveData.active / totalMentorsForPercentage) * 100}%`,
+              minWidth: activeInactiveData.active > 0 ? "fit-content" : 0
             }}
             title={`Active: ${activeInactiveData.active}`}
           >
             {activeInactiveData.active > 0 && (
-              <span className="font-medium text-green-700">
+              <span className="font-medium text-green-700 whitespace-nowrap px-3">
                 {activeInactiveData.active} Active
               </span>
             )}
@@ -394,13 +394,13 @@ const MentorAnalytics = ({ mentors, aggregations }) => {
           <div
             className="bg-red-200 h-8 flex items-center justify-center transition-all duration-500"
             style={{
-              width: `${(activeInactiveData.inactive / totalMentorsForPercentage) * 100
-                }%`,
+              width: `${(activeInactiveData.inactive / totalMentorsForPercentage) * 100}%`,
+              minWidth: activeInactiveData.inactive > 0 ? "fit-content" : 0
             }}
             title={`Inactive: ${activeInactiveData.inactive}`}
           >
             {activeInactiveData.inactive > 0 && (
-              <span className="font-medium text-red-700">
+              <span className="font-medium text-red-700 whitespace-nowrap px-3">
                 {activeInactiveData.inactive} Inactive
               </span>
             )}
@@ -530,8 +530,8 @@ const MentorManagementTable = ({
               <td className="px-6 py-4 text-center">
                 <span
                   className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${mentor.activeStatus
-                      ? "bg-green-100 text-green-700"
-                      : "bg-red-100 text-red-700"
+                    ? "bg-green-100 text-green-700"
+                    : "bg-red-100 text-red-700"
                     }`}
                 >
                   {mentor.activeStatus ? "Active" : "Inactive"}
