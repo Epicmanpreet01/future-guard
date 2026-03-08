@@ -200,7 +200,7 @@ export default function MentorDashboard({ authUser }) {
         .animate-fade-in-scale { animation: fade-in-scale 0.2s ease-out forwards; }
     `}</style>
         <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-4">
             <div className="flex justify-between items-center h-16">
               <div className="flex items-center space-x-3">
                 <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-amber-500 to-orange-500 rounded-lg">
@@ -234,7 +234,7 @@ export default function MentorDashboard({ authUser }) {
           </div>
         </header>
 
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+        <main className="max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-4 py-8 w-full">
           <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <StatCard
               icon={Users}
