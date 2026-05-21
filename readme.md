@@ -12,6 +12,22 @@ The entire system is **production-deployed on Render**.
 
 **Application URL:** https://futureguard.onrender.com
 
+### **Credentials for each role: (Testing)**
+### 1) Super Admin:
+Email: superadmin@gmail.com
+
+Password: Superadmin@123
+
+### 2) Admin:
+Email: admin@gmail.com
+
+Password: Admin@123
+
+### 3) Mentor:
+Email: mentor@gmail.com 
+
+Password: Mentor@123
+
 ---
 
 ## Key Features
